@@ -2,13 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>SimpleRPG</title>
 </head>
 <body>
-    <p class="test"></p>
-    <p class="test"></p>
-    <p class="test"></p>
-    <p class="test"></p>
+
+<canvas id="main" width="800" height="800"
+        style="border:1px solid #d3d3d3;
+        z-index: 0;
+        position:absolute;
+        left:0px;
+        top:0px;">
+    Your browser does not support the canvas element.
+</canvas>
+<canvas id="layer1" width="800" height="800"
+        style="z-index: 1;
+        position:absolute;
+        left:0px;
+        top:0px;">
+</canvas>
+
 </body>
 <script src="script.js"></script>
 </html>
