@@ -184,16 +184,24 @@ class Person {
 }
 
 class Bandit extends Person {
-    constructor(lvl = 1) {
-        super('Bandit', true, 2, 3);
+    constructor(lvl = 1, isAutonomous = true) {
+        super('Bandit', isAutonomous, 2, 3);
         this.leftHandEquipt(new Axe());
     }
 
-    getImg() { return 'img/People/bandit_axe.gif'; }
+    getImg() { return 'img/People/bandit_axe.png'; }
 
     gainExp(exp) {}
 }
 
+class Hero extends Person {
+    constructor(name = 'Hero') {
+        super(name, false, 3, 2, 2, 20);
+        this.rightHandEquipt(new Sword());
+    }
+
+    getImg() { return 'img/People/lyn_bladelord_sword.png'; }
+}
 
 
 
@@ -206,7 +214,8 @@ var canvas = document.getElementById("main"),
     imgMap = new Image(),
     imgs = [];
 
-var selectedCoords = 0,
+var selectedCoords,
+    hoverCoords,
     tileWidth = 32,
     tileHeight = 32,
     worldWidth = 800,
@@ -246,48 +255,89 @@ var selectedCoords = 0,
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1]
     ],
-    enemies = [
-        new Bandit(4),
-        new Bandit(),
-        new Bandit(),
-        new Bandit(),
-        new Bandit()
-    ];
+    entities = {
+        enemies: [
+            new Bandit(4, false),
+            new Bandit(),
+            new Bandit(),
+            new Bandit(),
+            new Bandit()
+        ],
+        allies: [
+            new Hero()
+        ]
+    };
 
-enemies[0].setLocation(17, 2);
-enemies[1].setLocation(15, 2);
-enemies[2].setLocation(18, 4);
-enemies[3].setLocation(17, 5);
-enemies[4].setLocation(12, 6);
+entities['enemies'][0].setLocation(17, 2);
+entities['enemies'][1].setLocation(15, 2);
+entities['enemies'][2].setLocation(18, 4);
+entities['enemies'][3].setLocation(17, 5);
+entities['enemies'][4].setLocation(12, 6);
+entities['allies'][0].setLocation(3, 22);
 
 imgMap.src = 'img/SimpleRPGmap.png';
 
-for(let emy in enemies) {
-    let img = new Image();
-    img.src = enemies[emy].getImg();
-    imgs.push(img);
+for(let prop in entities) {
+    if(entities.hasOwnProperty(prop)) {
+        for(let entity in entities[prop]) {
+            let img = new Image();
+            img.src = entities[prop][entity].getImg();
+            imgs.push(img);
+        }
+    }
 }
 
+
+// ************ Functions ************
 
 function init() {
     ctx.drawImage(imgMap, 0, 0, 800, 800);
 
     ctxLayer1.clearRect(0, 0, worldWidth, worldHeight);
-    for(let emy in enemies) {
-        let loc = enemies[emy].getLocation();
-        ctxLayer1.drawImage(imgs[emy], loc[0] * tileWidth, loc[1] * tileHeight, 32, 32);
+    let i = 0;
+    for(let prop in entities) {
+        if (entities.hasOwnProperty(prop)) {
+            for(let entity in entities[prop]) {
+                let loc = entities[prop][entity].getLocation();
+                ctxLayer1.drawImage(imgs[i++], loc[0] * tileWidth, loc[1] * tileHeight, 32, 32);
+            }
+        }
     }
+};
+
+function isEqual(array1, array2) {
+
+    if(!array1 || !array2) return false;
+    if(array1.length != array2.length) return false;
+
+    for(let coord in array1) {
+        if(array1[coord] != array2[coord]) return false;
+    }
+
+    return true;
 }
 
+layer1.onmousemove = (evt) => {
 
+    let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
 
+    if(isEqual(hoverCoords, currentHoverCoords)) return;
 
-canvas.onclick = (evt) => {
+    hoverCoords = currentHoverCoords;
+
+    let entity = entities['enemies'].filter((emy) => isEqual(emy.getLocation(), hoverCoords));
+    if(!entity.length) entity = entities['allies'].filter((ally) => isEqual(ally.getLocation(), hoverCoords));
+
+    entity.length && console.log(entity[0].toString());
+};
+
+layer1.onclick = (evt) => {
     selectedCoords = getCoords(evt.layerX, evt.layerY);
 
     console.log(selectedCoords);
-    console.log(VALID_PATH_MAP[test[1]][test[0]] ? 'Is Valid' : 'Not Valid');
+    console.log(VALID_PATH_MAP[selectedCoords[1]][selectedCoords[0]] ? 'Is Valid' : 'Not Valid');
 };
 
 
 init();
+// start();
