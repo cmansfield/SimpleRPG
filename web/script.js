@@ -87,7 +87,7 @@ class Person {
         this.y = 0;
 
         this.hands = [null, null];
-        this.img = null;
+        this.img = '';
     }
 
     getName() { return this.name; }
@@ -98,9 +98,10 @@ class Person {
     getHealth() { return this.health; }
     getAutonomy() { return this.isAutonomous; }
     getLocation() { return [this.x, this.y]; }
-    getImg() { return ''; }
+    getImg() { return this.img; }
 
     setLocation(x, y) { this.x = x; this.y = y; }
+    setImage(img) { this.img = img; }
 
     attack() {
         let dmg = this.str;
@@ -183,25 +184,73 @@ class Person {
     }
 }
 
-class Bandit extends Person {
-    constructor(lvl = 1, isAutonomous = true) {
-        super('Bandit', isAutonomous, 2, 3);
-        this.leftHandEquipt(new Axe());
+
+
+class I_PersonFac {
+    constructor() {
+        if(new.target === I_PersonFac) {
+            throw new TypeError('Cannot construct Abstract instances directly');
+        }
+
+        if(
+            this.generate === undefined
+        ) { throw new TypeError('Must override required methods'); }
     }
-
-    getImg() { return 'img/People/bandit_axe.png'; }
-
-    gainExp(exp) {}
 }
 
-class Hero extends Person {
-    constructor(name = 'Hero') {
-        super(name, false, 3, 2, 2, 20);
-        this.rightHandEquipt(new Sword());
+class GoodPersonFac extends I_PersonFac {
+    constructor() {
+        super();
     }
 
-    getImg() { return 'img/People/lyn_bladelord_sword.png'; }
+    generate(loc, typeOfUnit = 'hero', name = 'Hero', lvl = 1) {
+        let person = new Person(name, false, 3, 2, 2, 20);
+        person.setLocation(loc[0], loc[1]);
+
+        if(typeOfUnit === 'hero') {
+            person.setImage('img/People/lyn_bladelord_sword.png');
+            person.rightHandEquipt(new Sword());
+        }
+
+        return person;
+    }
 }
+
+class BadPersonFac extends I_PersonFac {
+    constructor() {
+        super();
+    }
+
+    generate(loc, typeOfUnit = 'axe', name = 'Bandit', lvl = 1) {
+        let person = new Person(name, true, 2, 3);
+        person.setLocation(loc[0], loc[1]);
+        person.gainExp = (exp) => {};
+
+        if(typeOfUnit === 'axe') {
+            person.setImage('img/People/bandit_axe.png');
+            person.leftHandEquipt(new Axe());
+        }
+
+        return person;
+    }
+}
+
+class AbsFacPerson {
+    static generate(affiliation = 'neutral') {
+        if(affiliation === 'good') {
+            return new GoodPersonFac();
+        }
+
+        if(affiliation === 'bad') {
+            return new BadPersonFac();
+        }
+
+        if(affiliation === 'neutral') { return null; }
+
+        return null;
+    }
+}
+
 
 
 
@@ -255,25 +304,21 @@ var selectedCoords,
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1]
     ],
+    goodEntityFac = AbsFacPerson.generate('good'),
+    badEntityFac = AbsFacPerson.generate('bad'),
     entities = {
         enemies: [
-            new Bandit(4, false),
-            new Bandit(),
-            new Bandit(),
-            new Bandit(),
-            new Bandit()
+            badEntityFac.generate([17,2], 'axe', 'Bandit', 4),
+            badEntityFac.generate([15,2]),
+            badEntityFac.generate([18,4]),
+            badEntityFac.generate([17,5]),
+            badEntityFac.generate([12,6])
         ],
         allies: [
-            new Hero()
+            goodEntityFac.generate([3,22])
         ]
     };
 
-entities['enemies'][0].setLocation(17, 2);
-entities['enemies'][1].setLocation(15, 2);
-entities['enemies'][2].setLocation(18, 4);
-entities['enemies'][3].setLocation(17, 5);
-entities['enemies'][4].setLocation(12, 6);
-entities['allies'][0].setLocation(3, 22);
 
 imgMap.src = 'img/SimpleRPGmap.png';
 
@@ -291,7 +336,7 @@ for(let prop in entities) {
 // ************ Functions ************
 
 function init() {
-    ctx.drawImage(imgMap, 0, 0, 800, 800);
+    ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
 
     ctxLayer1.clearRect(0, 0, worldWidth, worldHeight);
     let i = 0;
