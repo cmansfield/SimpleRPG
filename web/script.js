@@ -164,6 +164,8 @@ class Person {
         Math.random() <= this.strProb && ++this.str;
         Math.random() <= this.dexProb && ++this.dex;
         Math.random() <= this.spdProb && ++this.spd;
+        ++this.maxHealth;
+        this.health = this.maxHealth;
 
         this.exp -= limit;
         ++this.lvl;
@@ -274,7 +276,9 @@ class AbsFacPerson {
 var canvas = document.getElementById('main'),
     ctx = canvas.getContext('2d'),
     layer1 = document.getElementById('layer1'),
-    ctxLayer1 = layer1.getContext('2d'),
+    ctx1 = layer1.getContext('2d'),
+    layer2 = document.getElementById('layer2'),
+    ctx2 = layer2.getContext('2d'),
     output = document.getElementById('entityInfo'),
     imgMap = new Image(),
     imgs = [];
@@ -354,17 +358,29 @@ for(let prop in entities) {
 function init() {
     ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
 
-    ctxLayer1.clearRect(0, 0, worldWidth, worldHeight);
-    let i = 0;
-    for(let prop in entities) {
-        if (entities.hasOwnProperty(prop)) {
-            for(let entity in entities[prop]) {
-                let loc = entities[prop][entity].getLocation();
-                ctxLayer1.drawImage(imgs[i++], loc[0] * tileWidth, loc[1] * tileHeight, 32, 32);
+    render();
+};
+
+function render(layer = 'all') {
+
+    if(layer === 'all' || layer === 'layer1') {
+        ctx1.clearRect(0, 0, worldWidth, worldHeight);
+        let i = 0;
+        for(let prop in entities) {
+            if (entities.hasOwnProperty(prop)) {
+                for(let entity in entities[prop]) {
+                    let loc = entities[prop][entity].getLocation();
+                    ctx1.drawImage(imgs[i++], loc[0] * tileWidth, loc[1] * tileHeight, 32, 32);
+                }
             }
         }
     }
-};
+
+    if(layer === 'all' || layer === 'layer2') {
+        ctx2.clearRect(0, 0, worldWidth, worldHeight);
+        ctx2.globalAlpha = 0.4;
+    }
+}
 
 function start() {
 
@@ -382,12 +398,84 @@ function isEqual(array1, array2) {
     return true;
 }
 
-layer1.onmousemove = (evt) => {
+function getNeighbors(loc) {
+    let offsets = [[1,0],[0,1],[-1,0],[0,-1]],
+        neighbors = [];
+
+    if(loc === undefined) return [];
+
+    for(let offset in offsets) {
+        let pos = offsets[offset];
+
+        for(let i in loc) pos[i] += loc[i];
+
+        if(
+            pos[0] < numTilesX
+            && pos[1] < numTilesY
+            && pos[0] >= 0
+            && pos[1] >= 0
+        ) { VALID_PATH_MAP[pos[1]][pos[0]] && neighbors.push(pos); }
+    }
+
+    return neighbors;
+}
+
+function showEntityMovement(coords, context, speed) {
+    let frontier = [],
+        visited = new Set(),
+        boundary = new Set(),
+        current,
+        isInRange = (start, end, range) => {
+            let x = start[0],
+                y = start[1];
+
+            x = Math.abs(x - end[0]);
+            y = Math.abs(y - end[1]);
+
+            range -= x;
+
+            return (x >= 0 && y <= range);
+        };
+
+    render('layer2');
+
+    frontier.push(coords);
+    visited.add(coords.toString());
+
+    while(frontier.length > 0) {
+        current = frontier.shift();
+
+        while(current != undefined && !isInRange(coords, current, speed)) {
+            current = frontier.shift();
+        }
+
+        current != undefined && boundary.add(current.toString());
+
+        let neighbors = getNeighbors(current);
+        for(let next in neighbors) {
+            if(visited.has(neighbors[next].toString())) continue;
+
+            frontier.push(neighbors[next]);
+            visited.add(neighbors[next].toString());
+        }
+    }
+
+    context.fillStyle="#ff5b62";
+
+    for(let i = 0; i < numTilesX; ++i) {
+        for(let j = 0; j < numTilesY; ++j) {
+            if(!boundary.has([i,j].toString())) {
+                context.fillRect((i * tileWidth) + 1, (j * tileHeight) + 1, tileWidth, tileHeight);
+            }
+        }
+    }
+}
+
+layer2.onmousemove = (evt) => {
 
     let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
 
     if(isEqual(hoverCoords, currentHoverCoords)) return;
-
     hoverCoords = currentHoverCoords;
 
     let entity = entities['enemies'].filter((emy) => isEqual(emy.getLocation(), hoverCoords));
@@ -398,11 +486,20 @@ layer1.onmousemove = (evt) => {
     else { output.innerHTML = ' '; }
 };
 
-layer1.onclick = (evt) => {
-    selectedCoords = getCoords(evt.layerX, evt.layerY);
+layer2.onclick = (evt) => {
+    let currentSelectedCoords = getCoords(evt.layerX, evt.layerY);
 
-    console.log(selectedCoords);
-    console.log(VALID_PATH_MAP[selectedCoords[1]][selectedCoords[0]] ? 'Is Valid' : 'Not Valid');
+    if(isEqual(selectedCoords, currentSelectedCoords)) {
+        render('layer2');
+        selectedCoords = [];
+        return;
+    }
+    selectedCoords = currentSelectedCoords;
+
+    // console.log(selectedCoords);
+    // console.log(VALID_PATH_MAP[selectedCoords[1]][selectedCoords[0]] ? 'Is Valid' : 'Not Valid');
+
+    showEntityMovement(selectedCoords, ctx2, 4);
 };
 
 

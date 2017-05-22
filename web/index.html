@@ -4,37 +4,16 @@
     <meta charset="UTF-8">
     <title>SimpleRPG</title>
     <link rel="stylesheet" href="lib/bootstrap-3.3.7-dist/css/bootstrap.css">
-    <style>
-        #main {
-            position: absolute;
-            left: 0px;
-            top: 0px;
-            border:1px solid #d3d3d3;
-            z-index: 0;
-        }
-        #layer1 {
-            position: absolute;
-            left: 0px;
-            top: 0px;
-            z-index: 1;
-        }
-        .wrapper {
-            position: relative;
-        }
-        .wrapper2 {
-            position: relative;
-            top: 810px;
-            left: 0;
-        }
-    </style>
+    <link rel="stylesheet" href="game_style.css">
 </head>
 <body>
 
 <div class="container wrapper">
-    <canvas id="main" width="800" height="800">
+    <canvas id="main" class="game-canvas" width="800" height="800">
         Your browser does not support the canvas element.
     </canvas>
-    <canvas id="layer1" width="800" height="800"></canvas>
+    <canvas id="layer1" class="game-canvas" width="800" height="800"></canvas>
+    <canvas id="layer2" class="game-canvas" width="800" height="800"></canvas>
 </div>
 
 <div class="container wrapper2">

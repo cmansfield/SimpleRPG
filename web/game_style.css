@@ -1,0 +1,23 @@
+.game-canvas {
+    position: absolute;
+    left: 0px;
+    top: 0px;
+}
+#main {
+    border:1px solid #d3d3d3;
+    z-index: 0;
+}
+#layer1 {
+    z-index: 1;
+}
+#layer2 {
+    z-index: 2;
+}
+.wrapper {
+    position: relative;
+}
+.wrapper2 {
+    position: relative;
+    top: 810px;
+    left: 0;
+}
