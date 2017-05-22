@@ -460,7 +460,7 @@ function showEntityMovement(coords, context, speed) {
         }
     }
 
-    context.fillStyle="#ff5b62";
+    context.fillStyle = '#ff5b62';
 
     for(let i = 0; i < numTilesX; ++i) {
         for(let j = 0; j < numTilesY; ++j) {
@@ -471,6 +471,26 @@ function showEntityMovement(coords, context, speed) {
     }
 }
 
+function findEntity(loc) {
+    let entity = [];
+
+    for(let i in entities) {
+        if(entities.hasOwnProperty(i)) {
+            entity.push(entities[i].reduce(
+                (a, b) => (isEqual(b.getLocation(), loc) ? b : a),
+                null
+            ));
+        }
+    }
+
+    // Remove null values
+    entity = entity.filter((a) => a);
+
+    if(entity.length) { return entity[0]; }
+
+    return null;
+}
+
 layer2.onmousemove = (evt) => {
 
     let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
@@ -478,11 +498,10 @@ layer2.onmousemove = (evt) => {
     if(isEqual(hoverCoords, currentHoverCoords)) return;
     hoverCoords = currentHoverCoords;
 
-    let entity = entities['enemies'].filter((emy) => isEqual(emy.getLocation(), hoverCoords));
-    if(!entity.length) entity = entities['allies'].filter((ally) => isEqual(ally.getLocation(), hoverCoords));
+    let entity = findEntity(hoverCoords);
 
     //entity.length && console.log(entity[0].toString());
-    if(entity.length) { output.innerHTML = entity[0].toString(); }
+    if(entity) { output.innerHTML = entity.toString(); }
     else { output.innerHTML = ' '; }
 };
 
@@ -496,10 +515,8 @@ layer2.onclick = (evt) => {
     }
     selectedCoords = currentSelectedCoords;
 
-    // console.log(selectedCoords);
-    // console.log(VALID_PATH_MAP[selectedCoords[1]][selectedCoords[0]] ? 'Is Valid' : 'Not Valid');
-
-    showEntityMovement(selectedCoords, ctx2, 4);
+    let entity = findEntity(selectedCoords);
+    entity && showEntityMovement(selectedCoords, ctx2, 4);
 };
 
 
