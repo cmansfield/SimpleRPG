@@ -207,9 +207,16 @@ class GoodPersonFac extends I_PersonFac {
         let person = new Person(name, false, 3, 2, 2, 20);
         person.setLocation(loc[0], loc[1]);
 
+        while(person.getLvl() < lvl) {
+            person.gainExp(100);
+        }
+
         if(typeOfUnit === 'hero') {
             person.setImage('img/People/lyn_bladelord_sword.png');
             person.rightHandEquipt(new Sword());
+        }
+        else {
+            return null;
         }
 
         return person;
@@ -224,11 +231,19 @@ class BadPersonFac extends I_PersonFac {
     generate(loc, typeOfUnit = 'axe', name = 'Bandit', lvl = 1) {
         let person = new Person(name, true, 2, 3);
         person.setLocation(loc[0], loc[1]);
+
+        while(person.getLvl() < lvl) {
+            person.gainExp(100);
+        }
+
         person.gainExp = (exp) => {};
 
         if(typeOfUnit === 'axe') {
             person.setImage('img/People/bandit_axe.png');
             person.leftHandEquipt(new Axe());
+        }
+        else {
+            return null;
         }
 
         return person;
@@ -256,10 +271,11 @@ class AbsFacPerson {
 
 // ************ Populate Page ************
 
-var canvas = document.getElementById("main"),
-    ctx = canvas.getContext("2d"),
-    layer1 = document.getElementById("layer1"),
-    ctxLayer1 = layer1.getContext("2d"),
+var canvas = document.getElementById('main'),
+    ctx = canvas.getContext('2d'),
+    layer1 = document.getElementById('layer1'),
+    ctxLayer1 = layer1.getContext('2d'),
+    output = document.getElementById('entityInfo'),
     imgMap = new Image(),
     imgs = [];
 
@@ -350,6 +366,10 @@ function init() {
     }
 };
 
+function start() {
+
+}
+
 function isEqual(array1, array2) {
 
     if(!array1 || !array2) return false;
@@ -373,7 +393,9 @@ layer1.onmousemove = (evt) => {
     let entity = entities['enemies'].filter((emy) => isEqual(emy.getLocation(), hoverCoords));
     if(!entity.length) entity = entities['allies'].filter((ally) => isEqual(ally.getLocation(), hoverCoords));
 
-    entity.length && console.log(entity[0].toString());
+    //entity.length && console.log(entity[0].toString());
+    if(entity.length) { output.innerHTML = entity[0].toString(); }
+    else { output.innerHTML = ' '; }
 };
 
 layer1.onclick = (evt) => {
@@ -385,4 +407,4 @@ layer1.onclick = (evt) => {
 
 
 init();
-// start();
+start();

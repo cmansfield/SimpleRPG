@@ -3,24 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <title>SimpleRPG</title>
+    <link rel="stylesheet" href="lib/bootstrap-3.3.7-dist/css/bootstrap.css">
+    <style>
+        #main {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            border:1px solid #d3d3d3;
+            z-index: 0;
+        }
+        #layer1 {
+            position: absolute;
+            left: 0px;
+            top: 0px;
+            z-index: 1;
+        }
+        .wrapper {
+            position: relative;
+        }
+        .wrapper2 {
+            position: relative;
+            top: 810px;
+            left: 0;
+        }
+    </style>
 </head>
 <body>
 
-<canvas id="main" width="800" height="800"
-        style="border:1px solid #d3d3d3;
-        z-index: 0;
-        position:absolute;
-        left:0px;
-        top:0px;">
-    Your browser does not support the canvas element.
-</canvas>
-<canvas id="layer1" width="800" height="800"
-        style="z-index: 1;
-        position:absolute;
-        left:0px;
-        top:0px;">
-</canvas>
+<div class="container wrapper">
+    <canvas id="main" width="800" height="800">
+        Your browser does not support the canvas element.
+    </canvas>
+    <canvas id="layer1" width="800" height="800"></canvas>
+</div>
+
+<div class="container wrapper2">
+    <div class="row">
+        <div class="col">
+            <p class="text-warning" id="entityInfo"> </p>
+        </div>
+    </div>
+</div>
 
 </body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="lib/bootstrap-3.3.7-dist/js/bootstrap.js"></script>
 <script src="script.js"></script>
 </html>
