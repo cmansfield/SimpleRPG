@@ -5,6 +5,9 @@
 #JetBrains files
 .idea/
 
+#Library files
+web/lib/
+
 #Visual Studio files
 *.[Oo]bj
 *.user
