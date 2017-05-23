@@ -21,8 +21,8 @@
       <file leaf-file-name="index.html" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/web/index.html">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="110">
-              <caret line="5" column="77" lean-forward="false" selection-start-line="5" selection-start-column="77" selection-end-line="5" selection-end-column="77" />
+            <state relative-caret-position="418">
+              <caret line="19" column="21" lean-forward="true" selection-start-line="19" selection-start-column="21" selection-end-line="19" selection-end-column="21" />
               <folding />
             </state>
           </provider>
@@ -31,10 +31,33 @@
       <file leaf-file-name="script.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/web/script.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="533">
-              <caret line="504" column="36" lean-forward="true" selection-start-line="504" selection-start-column="36" selection-end-line="504" selection-end-column="36" />
+            <state relative-caret-position="617">
+              <caret line="548" column="22" lean-forward="true" selection-start-line="548" selection-start-column="22" selection-end-line="548" selection-end-column="22" />
               <folding>
-                <element signature="e#7086#8617#0" expanded="false" />
+                <element signature="n#I_Item#0" expanded="false" />
+                <element signature="n#Sword#0" expanded="false" />
+                <element signature="n#Axe#0" expanded="false" />
+                <element signature="n#Sheild#0" expanded="false" />
+                <element signature="n#Person#0" expanded="false" />
+                <element signature="n#I_PersonFac#0" expanded="false" />
+                <element signature="n#GoodPersonFac#0" expanded="false" />
+                <element signature="n#BadPersonFac#0" expanded="false" />
+                <element signature="n#AbsFacPerson#0" expanded="false" />
+                <element signature="e#6967#7105#0" expanded="false" />
+                <element signature="e#7128#8659#0" expanded="false" />
+                <element signature="e#8776#9118#0" expanded="false" />
+                <element signature="e#8795#9040#0" expanded="false" />
+                <element signature="e#9058#9112#0" expanded="false" />
+                <element signature="e#9148#9369#0" expanded="false" />
+                <element signature="n#!!block;n#init#0" expanded="false" />
+                <element signature="n#!!block;n#render#0" expanded="false" />
+                <element signature="n#!!block;n#start#0" expanded="false" />
+                <element signature="n#!!block;n#isEqual#0" expanded="false" />
+                <element signature="n#!!block;n#getNeighbors#0" expanded="false" />
+                <element signature="n#!!block;n#showEntityMoves#0" expanded="false" />
+                <element signature="n#!!block;n#getEntityMoves#0" expanded="false" />
+                <element signature="n#!!block;n#findEntity#0" expanded="false" />
+                <element signature="e#13090#13450#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -64,6 +87,9 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>800</find>
+      <find>hasOwnProperty</find>
+      <find>undefined</find>
+      <find>null</find>
     </findStrings>
   </component>
   <component name="IdeDocumentHistory">
@@ -153,6 +179,24 @@
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jsSimpleRPG" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="jsSimpleRPG" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="web" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="lib" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
         </subPane>
       </pane>
       <pane id="Scratches" />
@@ -239,12 +283,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1495131964045</updated>
-      <workItem from="1495131965723" duration="59305000" />
+      <workItem from="1495131965723" duration="65540000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="59305000" />
+    <option name="totallyTimeSpent" value="65540000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="2391" y="0" width="1218" height="1309" extended-state="0" />
@@ -305,14 +349,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/web/index.html">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="110">
-          <caret line="5" column="77" lean-forward="false" selection-start-line="5" selection-start-column="77" selection-end-line="5" selection-end-column="77" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/web/game_style.css">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="176">
@@ -321,12 +357,43 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/web/index.html">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="418">
+          <caret line="19" column="21" lean-forward="true" selection-start-line="19" selection-start-column="21" selection-end-line="19" selection-end-column="21" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/web/script.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="533">
-          <caret line="504" column="36" lean-forward="true" selection-start-line="504" selection-start-column="36" selection-end-line="504" selection-end-column="36" />
+        <state relative-caret-position="617">
+          <caret line="548" column="22" lean-forward="true" selection-start-line="548" selection-start-column="22" selection-end-line="548" selection-end-column="22" />
           <folding>
-            <element signature="e#7086#8617#0" expanded="false" />
+            <element signature="n#I_Item#0" expanded="false" />
+            <element signature="n#Sword#0" expanded="false" />
+            <element signature="n#Axe#0" expanded="false" />
+            <element signature="n#Sheild#0" expanded="false" />
+            <element signature="n#Person#0" expanded="false" />
+            <element signature="n#I_PersonFac#0" expanded="false" />
+            <element signature="n#GoodPersonFac#0" expanded="false" />
+            <element signature="n#BadPersonFac#0" expanded="false" />
+            <element signature="n#AbsFacPerson#0" expanded="false" />
+            <element signature="e#6967#7105#0" expanded="false" />
+            <element signature="e#7128#8659#0" expanded="false" />
+            <element signature="e#8776#9118#0" expanded="false" />
+            <element signature="e#8795#9040#0" expanded="false" />
+            <element signature="e#9058#9112#0" expanded="false" />
+            <element signature="e#9148#9369#0" expanded="false" />
+            <element signature="n#!!block;n#init#0" expanded="false" />
+            <element signature="n#!!block;n#render#0" expanded="false" />
+            <element signature="n#!!block;n#start#0" expanded="false" />
+            <element signature="n#!!block;n#isEqual#0" expanded="false" />
+            <element signature="n#!!block;n#getNeighbors#0" expanded="false" />
+            <element signature="n#!!block;n#showEntityMoves#0" expanded="false" />
+            <element signature="n#!!block;n#getEntityMoves#0" expanded="false" />
+            <element signature="n#!!block;n#findEntity#0" expanded="false" />
+            <element signature="e#13090#13450#0" expanded="false" />
           </folding>
         </state>
       </provider>

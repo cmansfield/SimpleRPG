@@ -1,3 +1,4 @@
+
 class I_Item {
     constructor() {
         if(new.target === I_Item) {
@@ -187,7 +188,6 @@ class Person {
 }
 
 
-
 class I_PersonFac {
     constructor() {
         if(new.target === I_PersonFac) {
@@ -283,7 +283,9 @@ var canvas = document.getElementById('main'),
     imgMap = new Image(),
     imgs = [];
 
-var selectedCoords,
+var selectedUnit,
+    selectedUnitsMoves,
+    selectedCoords,
     hoverCoords,
     tileWidth = 32,
     tileHeight = 32,
@@ -340,8 +342,6 @@ var selectedCoords,
     };
 
 
-imgMap.src = 'img/SimpleRPGmap.png';
-
 for(let prop in entities) {
     if(entities.hasOwnProperty(prop)) {
         for(let entity in entities[prop]) {
@@ -356,6 +356,7 @@ for(let prop in entities) {
 // ************ Functions ************
 
 function init() {
+    imgMap.src = 'img/SimpleRPGmap.png';
     ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
 
     render();
@@ -370,7 +371,12 @@ function render(layer = 'all') {
             if (entities.hasOwnProperty(prop)) {
                 for(let entity in entities[prop]) {
                     let loc = entities[prop][entity].getLocation();
-                    ctx1.drawImage(imgs[i++], loc[0] * tileWidth, loc[1] * tileHeight, 32, 32);
+                    ctx1.drawImage(
+                        imgs[i++],
+                        loc[0] * tileWidth, loc[1] * tileHeight,
+                        32,
+                        32
+                    );
                 }
             }
         }
@@ -402,7 +408,7 @@ function getNeighbors(loc) {
     let offsets = [[1,0],[0,1],[-1,0],[0,-1]],
         neighbors = [];
 
-    if(loc === undefined) return [];
+    if(!loc) return [];
 
     for(let offset in offsets) {
         let pos = offsets[offset];
@@ -420,9 +426,27 @@ function getNeighbors(loc) {
     return neighbors;
 }
 
-function showEntityMovement(coords, context, speed) {
+function showEntityMoves(validMoves, context) {
+
+    context.fillStyle = '#ff5b62';
+
+    for(let i = 0; i < numTilesX; ++i) {
+        for(let j = 0; j < numTilesY; ++j) {
+            if(!validMoves['movesSet'].has([i,j].toString())) {
+                context.fillRect(
+                    (i * tileWidth) + 1,
+                    (j * tileHeight) + 1,
+                    tileWidth, tileHeight
+                );
+            }
+        }
+    }
+}
+
+function getEntityMoves(coords, speed) {
     let frontier = [],
         visited = new Set(),
+        moves = [],
         boundary = new Set(),
         current,
         isInRange = (start, end, range) => {
@@ -445,11 +469,14 @@ function showEntityMovement(coords, context, speed) {
     while(frontier.length > 0) {
         current = frontier.shift();
 
-        while(current != undefined && !isInRange(coords, current, speed)) {
+        while(current && !isInRange(coords, current, speed)) {
             current = frontier.shift();
         }
 
-        current != undefined && boundary.add(current.toString());
+        if(current) {
+            boundary.add(current.toString());
+            moves.push(current);
+        }
 
         let neighbors = getNeighbors(current);
         for(let next in neighbors) {
@@ -460,15 +487,10 @@ function showEntityMovement(coords, context, speed) {
         }
     }
 
-    context.fillStyle = '#ff5b62';
-
-    for(let i = 0; i < numTilesX; ++i) {
-        for(let j = 0; j < numTilesY; ++j) {
-            if(!boundary.has([i,j].toString())) {
-                context.fillRect((i * tileWidth) + 1, (j * tileHeight) + 1, tileWidth, tileHeight);
-            }
-        }
-    }
+    return {
+        moves: moves,
+        movesSet: boundary
+    };
 }
 
 function findEntity(loc) {
@@ -511,12 +533,35 @@ layer2.onclick = (evt) => {
     if(isEqual(selectedCoords, currentSelectedCoords)) {
         render('layer2');
         selectedCoords = [];
+        selectedUnit = null;
         return;
     }
     selectedCoords = currentSelectedCoords;
 
+    if(
+        selectedUnit
+        && selectedUnitsMoves
+        && selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
+    {
+        selectedUnit.setLocation(selectedCoords[0], selectedCoords[1]);
+        selectedCoords = [];
+        selectedUnit = null;
+        render('all');
+        return;
+    }
+
     let entity = findEntity(selectedCoords);
-    entity && showEntityMovement(selectedCoords, ctx2, 4);
+
+    if(entity) {
+        selectedUnitsMoves = getEntityMoves(
+            selectedCoords,
+            entity.getSpeed() + 3
+        );
+        showEntityMoves(selectedUnitsMoves, ctx2);
+    }
+
+    if(!entity) selectedUnit = null;
+    else if(!selectedUnit) selectedUnit = entity;
 };
 
 
