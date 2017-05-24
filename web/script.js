@@ -166,7 +166,6 @@ class Person {
         Math.random() <= this.dexProb && ++this.dex;
         Math.random() <= this.spdProb && ++this.spd;
         ++this.maxHealth;
-        this.health = this.maxHealth;
 
         this.exp -= limit;
         ++this.lvl;
@@ -280,8 +279,7 @@ var canvas = document.getElementById('main'),
     layer2 = document.getElementById('layer2'),
     ctx2 = layer2.getContext('2d'),
     output = document.getElementById('entityInfo'),
-    imgMap = new Image(),
-    imgs = [];
+    imgMap = new Image();
 
 var selectedUnit,
     selectedUnitsMoves,
@@ -342,17 +340,6 @@ var selectedUnit,
     };
 
 
-for(let prop in entities) {
-    if(entities.hasOwnProperty(prop)) {
-        for(let entity in entities[prop]) {
-            let img = new Image();
-            img.src = entities[prop][entity].getImg();
-            imgs.push(img);
-        }
-    }
-}
-
-
 // ************ Functions ************
 
 function init() {
@@ -366,13 +353,15 @@ function render(layer = 'all') {
 
     if(layer === 'all' || layer === 'layer1') {
         ctx1.clearRect(0, 0, worldWidth, worldHeight);
-        let i = 0;
         for(let prop in entities) {
             if (entities.hasOwnProperty(prop)) {
                 for(let entity in entities[prop]) {
-                    let loc = entities[prop][entity].getLocation();
+                    let loc = entities[prop][entity].getLocation(),
+                        img = new Image();
+
+                    img.src = entities[prop][entity].getImg();
                     ctx1.drawImage(
-                        imgs[i++],
+                        img,
                         loc[0] * tileWidth, loc[1] * tileHeight,
                         32,
                         32
@@ -513,6 +502,75 @@ function findEntity(loc) {
     return null;
 }
 
+function removeEntity(entityToRem) {
+
+    for(let prop in entities) {
+        if(entities.hasOwnProperty(prop)) {
+            entities[prop] = entities[prop].filter((entity) => {
+                return entity !== entityToRem;
+            });
+        }
+    }
+}
+
+function engage(attacker, defender) {
+    if(defender.isHit(attacker.getSpeed())) {
+        let diff = attacker.attack() - defender.defend();
+        diff > 0 && defender.takeDamage(diff);
+    }
+
+    if(defender.getHealth() <= 0) {
+        return;
+    }
+
+    if(attacker.isHit(defender.getSpeed())) {
+        let diff = defender.attack() - attacker.defend();
+        diff > 0 && attacker.takeDamage(diff);
+    }
+}
+
+function fight(attacker, defender) {
+    let giveRewards = (unit1, unit2) => {
+        let giveReward = (unit1, unit2) => {
+            if(unit1.getHealth() <= 0) {
+                let lvlDiff = unit1.getLvl() - unit2.getLvl(),
+                    exp = 50;
+                exp += (lvlDiff > 0)
+                    ? 20 * lvlDiff
+                    : 0;
+
+                unit2.gainExp(exp);
+            }
+            else { unit1.gainExp(10); }
+        }
+
+        giveReward(unit1, unit2);
+        giveReward(unit2, unit1);
+    };
+
+    engage(attacker, defender);
+
+    giveRewards(attacker, defender);
+
+    console.log(attacker.toString());
+    console.log(defender.toString());
+    console.log('');
+
+    attacker.getHealth() <= 0 && removeEntity(attacker);
+    defender.getHealth() <= 0 && removeEntity(defender);
+
+    if(isGameOver()) {
+        layer2.onclick = () => {};
+        console.log('Game Over');
+    }
+}
+
+function isGameOver() {
+    if(!entities['allies'].length) return true;
+
+    return false;
+}
+
 layer2.onmousemove = (evt) => {
 
     let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
@@ -528,7 +586,12 @@ layer2.onmousemove = (evt) => {
 };
 
 layer2.onclick = (evt) => {
-    let currentSelectedCoords = getCoords(evt.layerX, evt.layerY);
+    let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
+        moveUnit = (loc) => {
+            selectedUnit.setLocation(loc[0], loc[1]);
+            selectedCoords = [];
+            render('all');
+        };
 
     if(isEqual(selectedCoords, currentSelectedCoords)) {
         render('layer2');
@@ -537,20 +600,55 @@ layer2.onclick = (evt) => {
         return;
     }
     selectedCoords = currentSelectedCoords;
+    let entity = findEntity(selectedCoords);
 
+    // If a unit has been selected and a new tile
+    // has been clicked then move the unit to that
+    // location
     if(
         selectedUnit
         && selectedUnitsMoves
         && selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
     {
-        selectedUnit.setLocation(selectedCoords[0], selectedCoords[1]);
-        selectedCoords = [];
+        // If any enemy was selected then we need to
+        // attack it
+        if(entity) {
+            let tilesNextToEntity = getNeighbors(selectedCoords);
+
+            if(!tilesNextToEntity.length) return;
+
+            for(let tile in tilesNextToEntity) {
+                if(selectedUnitsMoves['movesSet'].has(tilesNextToEntity[tile].toString())) {
+                    selectedUnit.setLocation(
+                        tilesNextToEntity[tile][0],
+                        tilesNextToEntity[tile][1]);
+                    selectedCoords = [];
+                    break;
+                }
+            }
+
+            fight(selectedUnit, entity);
+            render('all');
+            selectedUnit = null;
+
+            return;
+        }
+
+        moveUnit(selectedCoords);
         selectedUnit = null;
-        render('all');
         return;
     }
-
-    let entity = findEntity(selectedCoords);
+    else if(
+        selectedUnit
+        && selectedUnitsMoves
+        && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
+    {
+        // If selected outside of the unit's boundary
+        // then no-op the unit and rerender the map
+        moveUnit(selectedUnit.getLocation());
+        selectedUnit = null;
+        return;
+    }
 
     if(entity) {
         selectedUnitsMoves = getEntityMoves(
