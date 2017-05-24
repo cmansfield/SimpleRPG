@@ -1,7 +1,19 @@
 
-class I_Item {
+const X = 0, Y = 1;
+var UnitType = Object.freeze({
+    HERO: 1,
+    AXE: 2
+});
+var AffiliationEnum = Object.freeze({
+    GOOD: 1,
+    Neutral: 2,
+    BAD: 3
+});
+
+
+class I_CombatItem {
     constructor() {
-        if(new.target === I_Item) {
+        if(new.target === I_CombatItem) {
             throw new TypeError('Cannot construct Abstract instances directly');
         }
 
@@ -14,7 +26,7 @@ class I_Item {
     }
 }
 
-class Sword extends I_Item {
+class Sword extends I_CombatItem {
     constructor() {
         super();
         this.attack = 5;
@@ -29,7 +41,7 @@ class Sword extends I_Item {
     getValue() { return this.value; }
 }
 
-class Axe extends I_Item {
+class Axe extends I_CombatItem {
     constructor() {
         super();
         this.attack = 4;
@@ -44,7 +56,7 @@ class Axe extends I_Item {
     getValue() { return this.value; }
 }
 
-class Sheild extends I_Item {
+class Sheild extends I_CombatItem {
     constructor() {
         super();
         this.attack = 0;
@@ -108,7 +120,7 @@ class Person {
         let dmg = this.str;
 
         for(let item in this.hands) {
-            this.hands[item] instanceof I_Item && (dmg += this.hands[item].atk());
+            this.hands[item] instanceof I_CombatItem && (dmg += this.hands[item].atk());
         }
 
         return dmg;
@@ -118,7 +130,7 @@ class Person {
         let def = this.dex;
 
         for(let item in this.hands) {
-            this.hands[item] instanceof I_Item && (def += this.hands[item].def());
+            this.hands[item] instanceof I_CombatItem && (def += this.hands[item].def());
         }
 
         return def;
@@ -126,7 +138,8 @@ class Person {
 
     isHit(enmySpd) {
         const BASE_HIT_PERCENT = .8;
-        let hitPercent = BASE_HIT_PERCENT + (enmySpd - this.spd) / 10;
+        const CONVT_TO_PERCENT = 10;
+        let hitPercent = BASE_HIT_PERCENT + (enmySpd - this.spd) / CONVT_TO_PERCENT;
 
         return Math.random() < hitPercent;
     }
@@ -137,16 +150,16 @@ class Person {
     }
 
     rightHandEquipt(item) {
-        if(!item instanceof I_Item) {
-            throw new TypeError('Can only equipt items');
+        if(!item instanceof I_CombatItem) {
+            throw new TypeError('Can only equipt combat items');
         }
 
         this.hands[1] = item;
     }
 
     leftHandEquipt(item) {
-        if(!item instanceof I_Item) {
-            throw new TypeError('Can only equipt items');
+        if(!item instanceof I_CombatItem) {
+            throw new TypeError('Can only equipt combat items');
         }
 
         this.hands[0] = item;
@@ -155,6 +168,9 @@ class Person {
     gainExp(exp) {
         const BASE_EXP_BOOST = 100;
         const PERCENT_BOOST = .2;
+
+        // Add a 20% increase to exp requirement
+        // for each new level
         let limit = this.lvl * BASE_EXP_BOOST
             + ((this.lvl - 1) * BASE_EXP_BOOST) * PERCENT_BOOST;
 
@@ -170,6 +186,9 @@ class Person {
         this.exp -= limit;
         ++this.lvl;
 
+        // Continue to recursively call this
+        // funciton until we've leveled up all
+        // we can with the earned exp
         this.gainExp(0);
         return true;
     }
@@ -204,15 +223,15 @@ class GoodPersonFac extends I_PersonFac {
         super();
     }
 
-    generate(loc, typeOfUnit = 'hero', name = 'Hero', lvl = 1) {
+    generate(loc, typeOfUnit = UnitType.HERO, lvl = 1, name = 'Hero') {
         let person = new Person(name, false, 3, 2, 2, 20);
-        person.setLocation(loc[0], loc[1]);
+        person.setLocation(loc[X], loc[Y]);
 
         while(person.getLvl() < lvl) {
             person.gainExp(100);
         }
 
-        if(typeOfUnit === 'hero') {
+        if(typeOfUnit == UnitType.HERO) {
             person.setImage('img/People/lyn_bladelord_sword.png');
             person.rightHandEquipt(new Sword());
         }
@@ -229,9 +248,9 @@ class BadPersonFac extends I_PersonFac {
         super();
     }
 
-    generate(loc, typeOfUnit = 'axe', name = 'Bandit', lvl = 1) {
+    generate(loc, typeOfUnit = UnitType.AXE, lvl = 1, name = 'Bandit') {
         let person = new Person(name, true, 2, 3);
-        person.setLocation(loc[0], loc[1]);
+        person.setLocation(loc[X], loc[Y]);
 
         while(person.getLvl() < lvl) {
             person.gainExp(100);
@@ -239,7 +258,7 @@ class BadPersonFac extends I_PersonFac {
 
         person.gainExp = (exp) => {};
 
-        if(typeOfUnit === 'axe') {
+        if(typeOfUnit == UnitType.AXE) {
             person.setImage('img/People/bandit_axe.png');
             person.leftHandEquipt(new Axe());
         }
@@ -252,16 +271,16 @@ class BadPersonFac extends I_PersonFac {
 }
 
 class AbsFacPerson {
-    static generate(affiliation = 'neutral') {
-        if(affiliation === 'good') {
+    static generate(affiliation = AffiliationEnum.Neutral) {
+        if(affiliation == AffiliationEnum.GOOD) {
             return new GoodPersonFac();
         }
 
-        if(affiliation === 'bad') {
+        if(affiliation == AffiliationEnum.BAD) {
             return new BadPersonFac();
         }
 
-        if(affiliation === 'neutral') { return null; }
+        if(affiliation == AffiliationEnum.Neutral) { return null; }
 
         return null;
     }
@@ -271,6 +290,11 @@ class AbsFacPerson {
 
 
 // ************ Populate Page ************
+
+const tileWidth = 32,
+    tileHeight = 32,
+    worldWidth = 800,
+    worldHeight = 800;
 
 var canvas = document.getElementById('main'),
     ctx = canvas.getContext('2d'),
@@ -285,10 +309,6 @@ var selectedUnit,
     selectedUnitsMoves,
     selectedCoords,
     hoverCoords,
-    tileWidth = 32,
-    tileHeight = 32,
-    worldWidth = 800,
-    worldHeight = 800,
     numTilesX = worldWidth / tileWidth,
     numTilesY = worldHeight / tileHeight,
     getCoords = (x, y) => {
@@ -324,11 +344,11 @@ var selectedUnit,
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1]
     ],
-    goodEntityFac = AbsFacPerson.generate('good'),
-    badEntityFac = AbsFacPerson.generate('bad'),
+    goodEntityFac = AbsFacPerson.generate(AffiliationEnum.GOOD),
+    badEntityFac = AbsFacPerson.generate(AffiliationEnum.BAD),
     entities = {
         enemies: [
-            badEntityFac.generate([17,2], 'axe', 'Bandit', 4),
+            badEntityFac.generate([17,2], UnitType.AXE, 4, 'Bandit'),
             badEntityFac.generate([15,2]),
             badEntityFac.generate([18,4]),
             badEntityFac.generate([17,5]),
@@ -362,7 +382,7 @@ function render(layer = 'all') {
                     img.src = entities[prop][entity].getImg();
                     ctx1.drawImage(
                         img,
-                        loc[0] * tileWidth, loc[1] * tileHeight,
+                        loc[X] * tileWidth, loc[Y] * tileHeight,
                         32,
                         32
                     );
@@ -405,11 +425,11 @@ function getNeighbors(loc) {
         for(let i in loc) pos[i] += loc[i];
 
         if(
-            pos[0] < numTilesX
-            && pos[1] < numTilesY
-            && pos[0] >= 0
-            && pos[1] >= 0
-        ) { VALID_PATH_MAP[pos[1]][pos[0]] && neighbors.push(pos); }
+            pos[X] < numTilesX
+            && pos[Y] < numTilesY
+            && pos[X] >= 0
+            && pos[Y] >= 0
+        ) { VALID_PATH_MAP[pos[Y]][pos[X]] && neighbors.push(pos); }
     }
 
     return neighbors;
@@ -439,12 +459,11 @@ function getEntityMoves(coords, speed) {
         boundary = new Set(),
         current,
         isInRange = (start, end, range) => {
-            let x = start[0],
-                y = start[1];
+            let x = start[X],
+                y = start[Y];
 
-            x = Math.abs(x - end[0]);
-            y = Math.abs(y - end[1]);
-
+            x = Math.abs(x - end[X]);
+            y = Math.abs(y - end[Y]);
             range -= x;
 
             return (x >= 0 && y <= range);
@@ -530,28 +549,32 @@ function engage(attacker, defender) {
 }
 
 function fight(attacker, defender) {
-    let giveRewards = (unit1, unit2) => {
+    let giveRewards = (a, b) => {
         let giveReward = (unit1, unit2) => {
+            const BASE_EXP = 50,
+                BONUS_EXP = 20,
+                NONWIN_EXP = 10
             if(unit1.getHealth() <= 0) {
                 let lvlDiff = unit1.getLvl() - unit2.getLvl(),
-                    exp = 50;
-                exp += (lvlDiff > 0)
-                    ? 20 * lvlDiff
-                    : 0;
+                    exp = BASE_EXP;
+                    exp += (lvlDiff > 0)
+                        ? BONUS_EXP * lvlDiff
+                        : 0;
 
                 unit2.gainExp(exp);
             }
-            else { unit1.gainExp(10); }
+            else { unit1.gainExp(NONWIN_EXP); }
         }
 
-        giveReward(unit1, unit2);
-        giveReward(unit2, unit1);
+        giveReward(a, b);
+        giveReward(b, a);
     };
 
     engage(attacker, defender);
 
     giveRewards(attacker, defender);
 
+    // TODO - Remove me
     console.log(attacker.toString());
     console.log(defender.toString());
     console.log('');
@@ -561,14 +584,14 @@ function fight(attacker, defender) {
 
     if(isGameOver()) {
         layer2.onclick = () => {};
+
+        // TODO - Remove me
         console.log('Game Over');
     }
 }
 
 function isGameOver() {
-    if(!entities['allies'].length) return true;
-
-    return false;
+     return !entities['allies'].length;
 }
 
 layer2.onmousemove = (evt) => {
@@ -588,9 +611,9 @@ layer2.onmousemove = (evt) => {
 layer2.onclick = (evt) => {
     let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
         moveUnit = (loc) => {
-            selectedUnit.setLocation(loc[0], loc[1]);
+            selectedUnit.setLocation(loc[X], loc[Y]);
             selectedCoords = [];
-            render('all');
+            render();
         };
 
     if(isEqual(selectedCoords, currentSelectedCoords)) {
@@ -620,15 +643,15 @@ layer2.onclick = (evt) => {
             for(let tile in tilesNextToEntity) {
                 if(selectedUnitsMoves['movesSet'].has(tilesNextToEntity[tile].toString())) {
                     selectedUnit.setLocation(
-                        tilesNextToEntity[tile][0],
-                        tilesNextToEntity[tile][1]);
+                        tilesNextToEntity[tile][X],
+                        tilesNextToEntity[tile][Y]);
                     selectedCoords = [];
                     break;
                 }
             }
 
             fight(selectedUnit, entity);
-            render('all');
+            render();
             selectedUnit = null;
 
             return;
@@ -665,3 +688,17 @@ layer2.onclick = (evt) => {
 
 init();
 start();
+
+
+// ********** TODO **********
+// Prevent allied units from attacking each other
+// Add AI to enemies
+// Add icon animations
+// Add a way to win the game
+// Balance the fighting better
+// Add healing
+// Add notifications when something happens
+// Prevent player from moving enemy units
+// Add non-combat items
+// Add a lvl up banner
+// Add a menu for actions
