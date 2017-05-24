@@ -5,9 +5,16 @@ var UnitType = Object.freeze({
     AXE: 2
 });
 var AffiliationEnum = Object.freeze({
-    GOOD: 1,
-    Neutral: 2,
-    BAD: 3
+    GOOD: 0,
+    NEUTRAL: 1,
+    BAD: 2
+});
+var CanvasLayers = Object.freeze({
+    ALL: 1,
+    BACKGROUND: 2,
+    ENTITIES: 3,
+    FOG: 4,
+    MENU: 5
 });
 
 
@@ -271,7 +278,7 @@ class BadPersonFac extends I_PersonFac {
 }
 
 class AbsFacPerson {
-    static generate(affiliation = AffiliationEnum.Neutral) {
+    static generate(affiliation = AffiliationEnum.NEUTRAL) {
         if(affiliation == AffiliationEnum.GOOD) {
             return new GoodPersonFac();
         }
@@ -280,11 +287,76 @@ class AbsFacPerson {
             return new BadPersonFac();
         }
 
-        if(affiliation == AffiliationEnum.Neutral) { return null; }
+        if(affiliation == AffiliationEnum.NEUTRAL) { return null; }
 
         return null;
     }
 }
+
+
+class I_GameState {
+    constructor() {
+        if(new.target === I_GameState) {
+            throw new TypeError('Cannot construct Abstract instances directly');
+        }
+
+        if(
+            this.startAction === undefined
+            && this.getAffiliation === undefined
+        ) { throw new TypeError('Must override required methods'); }
+    }
+}
+
+class PlayerState extends I_GameState {
+    constructor(affiliation = AffiliationEnum.GOOD) {
+        super();
+        this.affiliation = affiliation;
+    }
+
+    getAffiliation() { return this.affiliation; }
+
+    startAction(gameContext) {
+        if(gameContext instanceof GameContext) {
+            gameContext.setState(this);
+        }
+
+        layer2.onclick = playerClickEvent;
+    }
+}
+
+class NpcState extends I_GameState {
+    constructor(affiliation = AffiliationEnum.BAD) {
+        super();
+        this.affiliation = affiliation;
+    }
+
+    getAffiliation() { return this.affiliation; }
+
+    startAction(gameContext) {
+        if(gameContext instanceof GameContext) {
+            gameContext.setState(this);
+        }
+
+        layer2.onclick = (evt) => {};
+    }
+}
+
+class GameContext {
+    constructor() {
+        this.state = null;
+    }
+
+    setState(state) {
+        if(state instanceof I_GameState) {
+            this.state = state;
+        }
+    }
+
+    getState() {
+        return this.state;
+    }
+}
+
 
 
 
@@ -360,6 +432,7 @@ var selectedUnit,
     };
 
 
+
 // ************ Functions ************
 
 function init() {
@@ -369,9 +442,9 @@ function init() {
     render();
 };
 
-function render(layer = 'all') {
+function render(layer = CanvasLayers.ALL) {
 
-    if(layer === 'all' || layer === 'layer1') {
+    if(layer == CanvasLayers.ALL || layer == CanvasLayers.ENTITIES) {
         ctx1.clearRect(0, 0, worldWidth, worldHeight);
         for(let prop in entities) {
             if (entities.hasOwnProperty(prop)) {
@@ -391,14 +464,29 @@ function render(layer = 'all') {
         }
     }
 
-    if(layer === 'all' || layer === 'layer2') {
+    if(layer == CanvasLayers.ALL || layer == CanvasLayers.FOG) {
         ctx2.clearRect(0, 0, worldWidth, worldHeight);
         ctx2.globalAlpha = 0.4;
     }
 }
 
 function start() {
+    let gameContext = new GameContext(),
+        states = {
+            0: new PlayerState(),
+            1: new NpcState(AffiliationEnum.NEUTRAL),
+            2: new NpcState()
+        };
 
+    gameContext.setState(states[AffiliationEnum.BAD]);
+
+    while(!isGameOver()) {
+
+        states[
+                (gameContext.getState().getAffiliation() + 1)
+                % Object.keys(states).length
+            ].startAction(gameContext);
+    }
 }
 
 function isEqual(array1, array2) {
@@ -469,7 +557,7 @@ function getEntityMoves(coords, speed) {
             return (x >= 0 && y <= range);
         };
 
-    render('layer2');
+    render(CanvasLayers.FOG);
 
     frontier.push(coords);
     visited.add(coords.toString());
@@ -591,7 +679,84 @@ function fight(attacker, defender) {
 }
 
 function isGameOver() {
-     return !entities['allies'].length;
+     return !entities.allies.length || !entities.enemies.length;
+}
+
+function playerClickEvent(evt) {
+        let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
+            moveUnit = (loc) => {
+            selectedUnit.setLocation(loc[X], loc[Y]);
+            selectedCoords = [];
+            render();
+        };
+
+        if(isEqual(selectedCoords, currentSelectedCoords)) {
+            render(CanvasLayers.FOG);
+            selectedCoords = [];
+            selectedUnit = null;
+            return;
+        }
+        selectedCoords = currentSelectedCoords;
+        let entity = findEntity(selectedCoords);
+
+        // If a unit has been selected and a new tile
+        // has been clicked then move the unit to that
+        // location
+        if(
+            selectedUnit
+            && selectedUnitsMoves
+            && selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
+        {
+            // If any enemy was selected then we need to
+            // attack it
+            if(entity) {
+                let tilesNextToEntity = getNeighbors(selectedCoords);
+
+                if(!tilesNextToEntity.length) return;
+
+                for(let tile in tilesNextToEntity) {
+                    if(selectedUnitsMoves['movesSet'].has(tilesNextToEntity[tile].toString())) {
+                        selectedUnit.setLocation(
+                            tilesNextToEntity[tile][X],
+                            tilesNextToEntity[tile][Y]);
+                        selectedCoords = [];
+                        break;
+                    }
+                }
+
+                fight(selectedUnit, entity);
+                render();
+                selectedUnit = null;
+
+                return;
+            }
+
+            moveUnit(selectedCoords);
+            selectedUnit = null;
+            return;
+        }
+        else if(
+            selectedUnit
+            && selectedUnitsMoves
+            && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
+        {
+            // If selected outside of the unit's boundary
+            // then no-op the unit and rerender the map
+            moveUnit(selectedUnit.getLocation());
+            selectedUnit = null;
+            return;
+        }
+
+        if(entity) {
+            selectedUnitsMoves = getEntityMoves(
+                selectedCoords,
+                entity.getSpeed() + 3
+            );
+            showEntityMoves(selectedUnitsMoves, ctx2);
+        }
+
+        if(!entity) selectedUnit = null;
+        else if(!selectedUnit) selectedUnit = entity;
 }
 
 layer2.onmousemove = (evt) => {
@@ -608,84 +773,7 @@ layer2.onmousemove = (evt) => {
     else { output.innerHTML = ' '; }
 };
 
-layer2.onclick = (evt) => {
-    let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
-        moveUnit = (loc) => {
-            selectedUnit.setLocation(loc[X], loc[Y]);
-            selectedCoords = [];
-            render();
-        };
-
-    if(isEqual(selectedCoords, currentSelectedCoords)) {
-        render('layer2');
-        selectedCoords = [];
-        selectedUnit = null;
-        return;
-    }
-    selectedCoords = currentSelectedCoords;
-    let entity = findEntity(selectedCoords);
-
-    // If a unit has been selected and a new tile
-    // has been clicked then move the unit to that
-    // location
-    if(
-        selectedUnit
-        && selectedUnitsMoves
-        && selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
-    {
-        // If any enemy was selected then we need to
-        // attack it
-        if(entity) {
-            let tilesNextToEntity = getNeighbors(selectedCoords);
-
-            if(!tilesNextToEntity.length) return;
-
-            for(let tile in tilesNextToEntity) {
-                if(selectedUnitsMoves['movesSet'].has(tilesNextToEntity[tile].toString())) {
-                    selectedUnit.setLocation(
-                        tilesNextToEntity[tile][X],
-                        tilesNextToEntity[tile][Y]);
-                    selectedCoords = [];
-                    break;
-                }
-            }
-
-            fight(selectedUnit, entity);
-            render();
-            selectedUnit = null;
-
-            return;
-        }
-
-        moveUnit(selectedCoords);
-        selectedUnit = null;
-        return;
-    }
-    else if(
-        selectedUnit
-        && selectedUnitsMoves
-        && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
-    {
-        // If selected outside of the unit's boundary
-        // then no-op the unit and rerender the map
-        moveUnit(selectedUnit.getLocation());
-        selectedUnit = null;
-        return;
-    }
-
-    if(entity) {
-        selectedUnitsMoves = getEntityMoves(
-            selectedCoords,
-            entity.getSpeed() + 3
-        );
-        showEntityMoves(selectedUnitsMoves, ctx2);
-    }
-
-    if(!entity) selectedUnit = null;
-    else if(!selectedUnit) selectedUnit = entity;
-};
-
-
+layer2.onclick = playerClickEvent;
 init();
 start();
 
