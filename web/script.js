@@ -16,6 +16,10 @@ var CanvasLayers = Object.freeze({
     FOG: 4,
     MENU: 5
 });
+var EntityState = Object.freeze({
+    ACTIVE: 1,
+    INACTIVE: 2
+});
 
 
 class I_CombatItem {
@@ -108,6 +112,7 @@ class Person {
 
         this.hands = [null, null];
         this.img = '';
+        this.state = EntityState.ACTIVE;
     }
 
     getName() { return this.name; }
@@ -119,9 +124,11 @@ class Person {
     getAutonomy() { return this.isAutonomous; }
     getLocation() { return [this.x, this.y]; }
     getImg() { return this.img; }
+    getState() { return this.state; }
 
     setLocation(x, y) { this.x = x; this.y = y; }
     setImage(img) { this.img = img; }
+    setState(state) { this.state = state; }
 
     attack() {
         let dmg = this.str;
@@ -303,31 +310,52 @@ class I_GameState {
         if(
             this.startAction === undefined
             && this.getAffiliation === undefined
+            && this.hasRemainingActiveEntities === undefined
+            && this.resetEntityStatus === undefined
         ) { throw new TypeError('Must override required methods'); }
     }
 }
 
 class PlayerState extends I_GameState {
-    constructor(affiliation = AffiliationEnum.GOOD) {
+    constructor(entities, affiliation = AffiliationEnum.GOOD) {
         super();
         this.affiliation = affiliation;
+        this.entities = entities;
     }
 
     getAffiliation() { return this.affiliation; }
 
     startAction(gameContext) {
+
         if(gameContext instanceof GameContext) {
             gameContext.setState(this);
         }
 
         layer2.onclick = playerClickEvent;
     }
+
+    hasRemainingActiveEntities() {
+
+        for(let entity in this.entities) {
+            if(this.entities[entity].getState() == EntityState.ACTIVE) return true;
+        }
+
+        return false;
+    }
+
+    resetEntityStatus() {
+
+        for(let entity in this.entities) {
+            this.entities[entity].setState(EntityState.ACTIVE);
+        }
+    }
 }
 
 class NpcState extends I_GameState {
-    constructor(affiliation = AffiliationEnum.BAD) {
+    constructor(entities, affiliation = AffiliationEnum.BAD) {
         super();
         this.affiliation = affiliation;
+        this.entities = entities;
     }
 
     getAffiliation() { return this.affiliation; }
@@ -338,6 +366,42 @@ class NpcState extends I_GameState {
         }
 
         layer2.onclick = (evt) => {};
+
+        for(let entity in this.entities) {
+            entity = this.entities[entity];
+            let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
+                selectedMove = Math.floor(
+                    Math.random() * (entityMoves.moves.length - 1)
+                );
+
+            while(findEntity(entityMoves.moves[selectedMove])) {
+                selectedMove = (selectedMove + 1) % entityMoves.moves.length;
+            }
+
+            entity.setLocation(
+                entityMoves.moves[selectedMove][X],
+                entityMoves.moves[selectedMove][Y]
+            );
+            render(CanvasLayers.ENTITIES);
+        }
+    }
+
+    hasRemainingActiveEntities() {
+
+        if(!this.entities) return false;
+
+        for(let entity in this.entities) {
+            if(this.entities[entity].getState() == EntityState.ACTIVE) return true;
+        }
+
+        return false;
+    }
+
+    resetEntityStatus() {
+
+        for(let entity in this.entities) {
+            this.entities[entity].setState(EntityState.ACTIVE);
+        }
     }
 }
 
@@ -356,9 +420,6 @@ class GameContext {
         return this.state;
     }
 }
-
-
-
 
 
 // ************ Populate Page ************
@@ -431,7 +492,12 @@ var selectedUnit,
         ]
     };
 
-
+let gameContext = new GameContext(),
+    states = {
+        0: new PlayerState(entities.allies),
+        1: new NpcState(null, AffiliationEnum.NEUTRAL),
+        2: new NpcState(entities.enemies)
+    };
 
 // ************ Functions ************
 
@@ -471,22 +537,22 @@ function render(layer = CanvasLayers.ALL) {
 }
 
 function start() {
-    let gameContext = new GameContext(),
-        states = {
-            0: new PlayerState(),
-            1: new NpcState(AffiliationEnum.NEUTRAL),
-            2: new NpcState()
-        };
 
-    gameContext.setState(states[AffiliationEnum.BAD]);
+    states[AffiliationEnum.GOOD].startAction(gameContext);
+}
 
-    while(!isGameOver()) {
+function update() {
 
+    if(gameContext.getState().hasRemainingActiveEntities()) { return; }
+
+    gameContext.getState().resetEntityStatus();
+
+     do {
         states[
-                (gameContext.getState().getAffiliation() + 1)
-                % Object.keys(states).length
+        (gameContext.getState().getAffiliation() + 1)
+        % Object.keys(states).length
             ].startAction(gameContext);
-    }
+    } while(gameContext.getState() instanceof NpcState);
 }
 
 function isEqual(array1, array2) {
@@ -726,13 +792,17 @@ function playerClickEvent(evt) {
 
                 fight(selectedUnit, entity);
                 render();
+                selectedUnit.setState(EntityState.INACTIVE);
                 selectedUnit = null;
+                update();
 
                 return;
             }
 
+            selectedUnit.setState(EntityState.INACTIVE);
             moveUnit(selectedCoords);
             selectedUnit = null;
+            update();
             return;
         }
         else if(
@@ -747,7 +817,7 @@ function playerClickEvent(evt) {
             return;
         }
 
-        if(entity) {
+        if(entity && entity.getState() == EntityState.ACTIVE) {
             selectedUnitsMoves = getEntityMoves(
                 selectedCoords,
                 entity.getSpeed() + 3
@@ -756,7 +826,7 @@ function playerClickEvent(evt) {
         }
 
         if(!entity) selectedUnit = null;
-        else if(!selectedUnit) selectedUnit = entity;
+        else if(!selectedUnit && entity.getState() == EntityState.ACTIVE) selectedUnit = entity;
 }
 
 layer2.onmousemove = (evt) => {
