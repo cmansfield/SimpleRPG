@@ -237,8 +237,8 @@ class GoodPersonFac extends I_PersonFac {
         super();
     }
 
-    generate(loc, typeOfUnit = UnitType.HERO, lvl = 1, name = 'Hero') {
-        let person = new Person(name, false, 3, 2, 2, 20);
+    generate(loc, typeOfUnit = UnitType.HERO, lvl = 1, isAutonomous = false, name = 'Hero') {
+        let person = new Person(name, isAutonomous, 3, 2, 2, 20);
         person.setLocation(loc[X], loc[Y]);
 
         while(person.getLvl() < lvl) {
@@ -246,7 +246,9 @@ class GoodPersonFac extends I_PersonFac {
         }
 
         if(typeOfUnit == UnitType.HERO) {
-            person.setImage('img/People/lyn_bladelord_sword.png');
+            let img = new Image();
+            img.src = 'img/People/lyn_bladelord_sword.png';
+            person.setImage(img);
             person.rightHandEquipt(new Sword());
         }
         else {
@@ -262,8 +264,8 @@ class BadPersonFac extends I_PersonFac {
         super();
     }
 
-    generate(loc, typeOfUnit = UnitType.AXE, lvl = 1, name = 'Bandit') {
-        let person = new Person(name, true, 2, 3);
+    generate(loc, typeOfUnit = UnitType.AXE, lvl = 1, isAutonomous = true, name = 'Bandit') {
+        let person = new Person(name, isAutonomous, 2, 3);
         person.setLocation(loc[X], loc[Y]);
 
         while(person.getLvl() < lvl) {
@@ -273,7 +275,9 @@ class BadPersonFac extends I_PersonFac {
         person.gainExp = (exp) => {};
 
         if(typeOfUnit == UnitType.AXE) {
-            person.setImage('img/People/bandit_axe.png');
+            let img = new Image();
+            img.src = 'img/People/bandit_axe.png';
+            person.setImage(img);
             person.leftHandEquipt(new Axe());
         }
         else {
@@ -368,10 +372,13 @@ class NpcState extends I_GameState {
         layer2.onclick = (evt) => {};
 
         for(let entity in this.entities) {
+
+            if(!this.entities[entity].getAutonomy()) continue;
+
             entity = this.entities[entity];
             let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
                 selectedMove = Math.floor(
-                    Math.random() * (entityMoves.moves.length - 1)
+                    Math.random() * (entityMoves.moves.length)
                 );
 
             while(findEntity(entityMoves.moves[selectedMove])) {
@@ -429,27 +436,49 @@ const tileWidth = 32,
     worldWidth = 800,
     worldHeight = 800;
 
-var canvas = document.getElementById('main'),
-    ctx = canvas.getContext('2d'),
-    layer1 = document.getElementById('layer1'),
-    ctx1 = layer1.getContext('2d'),
-    layer2 = document.getElementById('layer2'),
-    ctx2 = layer2.getContext('2d'),
-    output = document.getElementById('entityInfo'),
-    imgMap = new Image();
-
-var selectedUnit,
+var canvas,
+    ctx,
+    layer1,
+    ctx1,
+    layer2,
+    ctx2,
+    output,
+    imgMap,
+    selectedUnit,
     selectedUnitsMoves,
     selectedCoords,
     hoverCoords,
-    numTilesX = worldWidth / tileWidth,
-    numTilesY = worldHeight / tileHeight,
-    getCoords = (x, y) => {
-        var xCoord = Math.floor(x / tileWidth),
-            yCoord = Math.floor(y / tileHeight);
+    numTilesX ,
+    numTilesY,
+    getCoords,
+    VALID_PATH_MAP,
+    goodEntityFac,
+    badEntityFac,
+    entities;
 
-        return [xCoord, yCoord];
-    },
+let gameContext,
+    states;
+
+// ************ Functions ************
+
+function init() {
+    canvas = document.getElementById('main');
+    ctx = canvas.getContext('2d');
+    layer1 = document.getElementById('layer1');
+    ctx1 = layer1.getContext('2d');
+    layer2 = document.getElementById('layer2');
+    ctx2 = layer2.getContext('2d');
+    output = document.getElementById('entityInfo');
+    imgMap = new Image();
+
+    numTilesX = worldWidth / tileWidth;
+    numTilesY = worldHeight / tileHeight;
+    getCoords = (x, y) => {
+    var xCoord = Math.floor(x / tileWidth),
+        yCoord = Math.floor(y / tileHeight);
+
+    return [xCoord, yCoord];
+};
     VALID_PATH_MAP = [
         [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1],
         [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1],
@@ -476,12 +505,12 @@ var selectedUnit,
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1]
-    ],
-    goodEntityFac = AbsFacPerson.generate(AffiliationEnum.GOOD),
-    badEntityFac = AbsFacPerson.generate(AffiliationEnum.BAD),
+    ];
+    goodEntityFac = AbsFacPerson.generate(AffiliationEnum.GOOD);
+    badEntityFac = AbsFacPerson.generate(AffiliationEnum.BAD);
     entities = {
         enemies: [
-            badEntityFac.generate([17,2], UnitType.AXE, 4, 'Bandit'),
+            badEntityFac.generate([17,2], UnitType.AXE, 4, false, 'Bandit'),
             badEntityFac.generate([15,2]),
             badEntityFac.generate([18,4]),
             badEntityFac.generate([17,5]),
@@ -492,20 +521,33 @@ var selectedUnit,
         ]
     };
 
-let gameContext = new GameContext(),
+    gameContext = new GameContext();
     states = {
         0: new PlayerState(entities.allies),
         1: new NpcState(null, AffiliationEnum.NEUTRAL),
         2: new NpcState(entities.enemies)
     };
 
-// ************ Functions ************
-
-function init() {
     imgMap.src = 'img/SimpleRPGmap.png';
     ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
 
     render();
+
+    layer2.onmousemove = (evt) => {
+
+        let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
+
+        if(isEqual(hoverCoords, currentHoverCoords)) return;
+        hoverCoords = currentHoverCoords;
+
+        let entity = findEntity(hoverCoords);
+
+        //entity.length && console.log(entity[0].toString());
+        if(entity) { output.innerHTML = entity.toString(); }
+        else { output.innerHTML = ' '; }
+    };
+
+    layer2.onclick = playerClickEvent;
 };
 
 function render(layer = CanvasLayers.ALL) {
@@ -515,16 +557,20 @@ function render(layer = CanvasLayers.ALL) {
         for(let prop in entities) {
             if (entities.hasOwnProperty(prop)) {
                 for(let entity in entities[prop]) {
-                    let loc = entities[prop][entity].getLocation(),
-                        img = new Image();
+                    let loc = entities[prop][entity].getLocation();
 
-                    img.src = entities[prop][entity].getImg();
-                    ctx1.drawImage(
-                        img,
-                        loc[X] * tileWidth, loc[Y] * tileHeight,
-                        32,
-                        32
-                    );
+                    let drawImg = function(img) {
+                            ctx1.drawImage(
+                                img,
+                                loc[X] * tileWidth, loc[Y] * tileHeight,
+                                32,
+                                32
+                            );
+                        },
+                        img = entities[prop][entity].getImg();
+
+                    if(img.complete) { drawImg(img); }
+                    else { img.onload(drawImg(img)); }
                 }
             }
         }
@@ -829,23 +875,10 @@ function playerClickEvent(evt) {
         else if(!selectedUnit && entity.getState() == EntityState.ACTIVE) selectedUnit = entity;
 }
 
-layer2.onmousemove = (evt) => {
-
-    let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
-
-    if(isEqual(hoverCoords, currentHoverCoords)) return;
-    hoverCoords = currentHoverCoords;
-
-    let entity = findEntity(hoverCoords);
-
-    //entity.length && console.log(entity[0].toString());
-    if(entity) { output.innerHTML = entity.toString(); }
-    else { output.innerHTML = ' '; }
-};
-
-layer2.onclick = playerClickEvent;
-init();
-start();
+$(document).ready(() => {
+    init();
+    start();
+});
 
 
 // ********** TODO **********
