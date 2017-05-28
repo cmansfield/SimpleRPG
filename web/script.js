@@ -10,7 +10,8 @@ const X = 0, Y = 1,
     idleAnimationDuration = 800,
     UnitType = Object.freeze({
         HERO: 1,
-        AXE: 2
+        AXE: 2,
+        SWORD: 3
     }),
     AffiliationEnum = Object.freeze({
         GOOD: 0,
@@ -215,6 +216,11 @@ class Person {
         return true;
     }
 
+    heal(amount = this._maxHealth) {
+        this._health += amount;
+        if(this._health > this._maxHealth) this._health = this._maxHealth;
+    }
+
     toString() {
         return this._name
             + ' lvl:' + this._lvl + ' exp:' + this._exp
@@ -290,21 +296,33 @@ class GoodPersonFac extends I_PersonFac {
     }
 
     generate(loc, typeOfUnit = UnitType.HERO, lvl = 1, isAutonomous = false, name = 'Hero') {
-        let person = new Person(name, isAutonomous, 3, 2, 2, 20);
+        let person = new Person(name, isAutonomous, 3, 2, 2);
         person.setLocation(loc[X], loc[Y]);
 
         while(person.getLvl() < lvl) {
             person.gainExp(100);
         }
 
-        if(typeOfUnit == UnitType.HERO) {
-            let sprite = new Sprite('img/People/lyn_bladelord_sword.png', 40, 40, this._ctx);
-            person.setSprite(sprite);
-            person.rightHandEquipt(new Sword());
+        switch(typeOfUnit) {
+            case UnitType.HERO:
+                person._maxHealth += 10;
+                person.setSprite(
+                    new Sprite('img/People/lyn_bladelord_sword.png', 40, 40, this._ctx)
+                );
+                person.rightHandEquipt(new Sword());
+                break;
+            case UnitType.SWORD:
+                person._str += 1;
+                person.setSprite(
+                    new Sprite('img/People/mercenary_sword2.png', 44, 44, this._ctx)
+                );
+                person.rightHandEquipt(new Sword());
+                break;
+            default:
+                return null;
         }
-        else {
-            return null;
-        }
+
+        person.heal();
 
         return person;
     }
@@ -326,14 +344,26 @@ class BadPersonFac extends I_PersonFac {
 
         person.gainExp = (exp) => {};
 
-        if(typeOfUnit == UnitType.AXE) {
-            let sprite = new Sprite('img/People/bandit_axe.png', 50, 50, this._ctx);
-            person.setSprite(sprite);
-            person.leftHandEquipt(new Axe());
+        switch(typeOfUnit) {
+            case UnitType.AXE:
+                person._dex += 1;
+                person.setSprite(
+                    new Sprite('img/People/bandit_axe.png', 50, 50, this._ctx)
+                );
+                person.leftHandEquipt(new Axe());
+                break;
+            case UnitType.SWORD:
+                person._str += 1;
+                person.setSprite(
+                    new Sprite('img/People/mercenary_sword.png', 46, 46, this._ctx)
+                );
+                person.rightHandEquipt(new Sword());
+                break;
+            default:
+                return null;
         }
-        else {
-            return null;
-        }
+
+        person.heal();
 
         return person;
     }
@@ -559,14 +589,15 @@ function init() {
     badEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.BAD);
     entities = {
         enemies: [
-            badEntityFac.generate([17,2], UnitType.AXE, 4, false, 'Bandit'),
+            badEntityFac.generate([17,2], UnitType.SWORD, 4, false, 'Denning'),
             badEntityFac.generate([15,2]),
             badEntityFac.generate([18,4]),
             badEntityFac.generate([17,5]),
             badEntityFac.generate([12,6])
         ],
         allies: [
-            goodEntityFac.generate([3,22])
+            goodEntityFac.generate([3,22]),
+            goodEntityFac.generate([5, 21], UnitType.SWORD, 2, false, 'Kent')
         ]
     };
 
