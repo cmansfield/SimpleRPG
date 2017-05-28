@@ -40,46 +40,54 @@ class I_CombatItem {
 class Sword extends I_CombatItem {
     constructor() {
         super();
-        this.attack = 5;
-        this.defence = 0;
-        this.name = 'Short Sword';
-        this.value = 23;
+        this._attack = 5;
+        this._defence = 0;
+        this._name = 'Short Sword';
+        this._value = 23;
     }
 
-    atk() { return this.attack; }
-    def() { return this.defence; }
-    getName() { return this.name; }
-    getValue() { return this.value; }
+    atk() { return this._attack; }
+    def() { return this._defence; }
+    getName() { return this._name; }
+    getValue() { return this._value; }
 }
 
 class Axe extends I_CombatItem {
     constructor() {
         super();
-        this.attack = 4;
-        this.defence = 0;
-        this.name = 'Iron Axe';
-        this.value = 18;
+        this._attack = 4;
+        this._defence = 0;
+        this._name = 'Iron Axe';
+        this._value = 18;
     }
 
-    atk() { return this.attack; }
-    def() { return this.defence; }
-    getName() { return this.name; }
-    getValue() { return this.value; }
+    atk() { return this._attack; }
+    def() { return this._defence; }
+    getName() { return this._name; }
+    getValue() { return this._value; }
 }
 
 class Sheild extends I_CombatItem {
     constructor() {
         super();
-        this.attack = 0;
-        this.defence = 3;
-        this.name = 'Small Sheild';
-        this.value = 12;
+        this._attack = 0;
+        this._defence = 3;
+        this._name = 'Small Sheild';
+        this._value = 12;
     }
 
-    atk() { return this.attack; }
-    def() { return this.defence; }
-    getName() { return this.name; }
-    getValue() { return this.value; }
+    atk() { return this._attack; }
+    def() { return this._defence; }
+    getName() { return this._name; }
+    getValue() { return this._value; }
+}
+
+
+class Sprite {
+    constructor() {
+
+    }
+
 }
 
 
@@ -95,56 +103,56 @@ class Person {
         dexProb = .6,
         spdProb = .6
     ) {
-        this.name = name;
-        this.str = str;
-        this.dex = dex;
-        this.spd = spd;
-        this.strProb = strProb;
-        this.dexProb = dexProb;
-        this.spdProb = spdProb;
-        this.maxHealth = health;
-        this.health = health;
-        this.lvl = 1;
-        this.exp = 0;
-        this.isAutonomous = isAutonomous;
-        this.x = 0;
-        this.y = 0;
+        this._name = name;
+        this._str = str;
+        this._dex = dex;
+        this._spd = spd;
+        this._strProb = strProb;
+        this._dexProb = dexProb;
+        this._spdProb = spdProb;
+        this._maxHealth = health;
+        this._health = health;
+        this._lvl = 1;
+        this._exp = 0;
+        this._isAutonomous = isAutonomous;
+        this._x = 0;
+        this._y = 0;
 
-        this.hands = [null, null];
-        this.img = '';
-        this.state = EntityState.ACTIVE;
+        this._hands = [null, null];
+        this._img = '';
+        this._state = EntityState.ACTIVE;
     }
 
-    getName() { return this.name; }
-    getLvl() { return this.lvl; }
-    getStrength() { return this.str; }
-    getDex() { return this.dex; }
-    getSpeed() { return this.spd; }
-    getHealth() { return this.health; }
-    getAutonomy() { return this.isAutonomous; }
-    getLocation() { return [this.x, this.y]; }
-    getImg() { return this.img; }
-    getState() { return this.state; }
+    getName() { return this._name; }
+    getLvl() { return this._lvl; }
+    getStrength() { return this._str; }
+    getDex() { return this._dex; }
+    getSpeed() { return this._spd; }
+    getHealth() { return this._health; }
+    getAutonomy() { return this._isAutonomous; }
+    getLocation() { return [this._x, this._y]; }
+    getImg() { return this._img; }
+    getState() { return this._state; }
 
-    setLocation(x, y) { this.x = x; this.y = y; }
-    setImage(img) { this.img = img; }
-    setState(state) { this.state = state; }
+    setImage(img) { this._img = img; }
+    setState(state) { this._state = state; }
+    setLocation(x, y) { this._x = x; this._y = y; }
 
     attack() {
-        let dmg = this.str;
+        let dmg = this._str;
 
-        for(let item in this.hands) {
-            this.hands[item] instanceof I_CombatItem && (dmg += this.hands[item].atk());
+        for(let item in this._hands) {
+            this._hands[item] instanceof I_CombatItem && (dmg += this._hands[item].atk());
         }
 
         return dmg;
     }
 
     defend() {
-        let def = this.dex;
+        let def = this._dex;
 
-        for(let item in this.hands) {
-            this.hands[item] instanceof I_CombatItem && (def += this.hands[item].def());
+        for(let item in this._hands) {
+            this._hands[item] instanceof I_CombatItem && (def += this._hands[item].def());
         }
 
         return def;
@@ -153,14 +161,14 @@ class Person {
     isHit(enmySpd) {
         const BASE_HIT_PERCENT = .8;
         const CONVT_TO_PERCENT = 10;
-        let hitPercent = BASE_HIT_PERCENT + (enmySpd - this.spd) / CONVT_TO_PERCENT;
+        let hitPercent = BASE_HIT_PERCENT + (enmySpd - this._spd) / CONVT_TO_PERCENT;
 
         return Math.random() < hitPercent;
     }
 
     takeDamage(dmg) {
-        this.health -= dmg;
-        return this.health <= 0;
+        this._health -= dmg;
+        return this._health <= 0;
     }
 
     rightHandEquipt(item) {
@@ -168,7 +176,7 @@ class Person {
             throw new TypeError('Can only equipt combat items');
         }
 
-        this.hands[1] = item;
+        this._hands[1] = item;
     }
 
     leftHandEquipt(item) {
@@ -176,7 +184,7 @@ class Person {
             throw new TypeError('Can only equipt combat items');
         }
 
-        this.hands[0] = item;
+        this._hands[0] = item;
     }
 
     gainExp(exp) {
@@ -185,20 +193,20 @@ class Person {
 
         // Add a 20% increase to exp requirement
         // for each new level
-        let limit = this.lvl * BASE_EXP_BOOST
-            + ((this.lvl - 1) * BASE_EXP_BOOST) * PERCENT_BOOST;
+        let limit = this._lvl * BASE_EXP_BOOST
+            + ((this._lvl - 1) * BASE_EXP_BOOST) * PERCENT_BOOST;
 
-        this.exp += exp;
+        this._exp += exp;
 
-        if(this.exp < limit) { return false; }
+        if(this._exp < limit) { return false; }
 
-        Math.random() <= this.strProb && ++this.str;
-        Math.random() <= this.dexProb && ++this.dex;
-        Math.random() <= this.spdProb && ++this.spd;
-        ++this.maxHealth;
+        Math.random() <= this._strProb && ++this._str;
+        Math.random() <= this._dexProb && ++this._dex;
+        Math.random() <= this._spdProb && ++this._spd;
+        ++this._maxHealth;
 
-        this.exp -= limit;
-        ++this.lvl;
+        this._exp -= limit;
+        ++this._lvl;
 
         // Continue to recursively call this
         // funciton until we've leveled up all
@@ -208,12 +216,12 @@ class Person {
     }
 
     toString() {
-        return this.name
-            + ' lvl:' + this.lvl + ' exp:' + this.exp
-            + '\nhealth: ' + this.health + '/' + this.maxHealth
-            + '\nstr: ' + this.str
-            + '\ndex: ' + this.dex
-            + '\nspd: ' + this.spd
+        return this._name
+            + ' lvl:' + this._lvl + ' exp:' + this._exp
+            + '\nhealth: ' + this._health + '/' + this._maxHealth
+            + '\nstr: ' + this._str
+            + '\ndex: ' + this._dex
+            + '\nspd: ' + this._spd
             + '\nattack: ' + this.attack()
             + '\ndefense: ' + this.defend();
     }
@@ -313,7 +321,7 @@ class I_GameState {
 
         if(
             this.startAction === undefined
-            && this.getAffiliation === undefined
+            && this.affiliation === undefined
             && this.hasRemainingActiveEntities === undefined
             && this.resetEntityStatus === undefined
         ) { throw new TypeError('Must override required methods'); }
@@ -323,16 +331,16 @@ class I_GameState {
 class PlayerState extends I_GameState {
     constructor(entities, affiliation = AffiliationEnum.GOOD) {
         super();
-        this.affiliation = affiliation;
-        this.entities = entities;
+        this._affiliation = affiliation;
+        this._entities = entities;
     }
 
-    getAffiliation() { return this.affiliation; }
+    get affiliation() { return this._affiliation; }
 
     startAction(gameContext) {
 
         if(gameContext instanceof GameContext) {
-            gameContext.setState(this);
+            gameContext.state = this;
         }
 
         layer2.onclick = playerClickEvent;
@@ -340,8 +348,8 @@ class PlayerState extends I_GameState {
 
     hasRemainingActiveEntities() {
 
-        for(let entity in this.entities) {
-            if(this.entities[entity].getState() == EntityState.ACTIVE) return true;
+        for(let entity in this._entities) {
+            if(this._entities[entity].getState() == EntityState.ACTIVE) return true;
         }
 
         return false;
@@ -349,8 +357,8 @@ class PlayerState extends I_GameState {
 
     resetEntityStatus() {
 
-        for(let entity in this.entities) {
-            this.entities[entity].setState(EntityState.ACTIVE);
+        for(let entity in this._entities) {
+            this._entities[entity].setState(EntityState.ACTIVE);
         }
     }
 }
@@ -358,24 +366,24 @@ class PlayerState extends I_GameState {
 class NpcState extends I_GameState {
     constructor(entities, affiliation = AffiliationEnum.BAD) {
         super();
-        this.affiliation = affiliation;
-        this.entities = entities;
+        this._affiliation = affiliation;
+        this._entities = entities;
     }
 
-    getAffiliation() { return this.affiliation; }
+    get affiliation() { return this._affiliation; }
 
     startAction(gameContext) {
         if(gameContext instanceof GameContext) {
-            gameContext.setState(this);
+            gameContext.state = this;
         }
 
         layer2.onclick = (evt) => {};
 
-        for(let entity in this.entities) {
+        for(let entity in this._entities) {
 
-            if(!this.entities[entity].getAutonomy()) continue;
+            if(!this._entities[entity].getAutonomy()) continue;
 
-            entity = this.entities[entity];
+            entity = this._entities[entity];
             let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
                 selectedMove = Math.floor(
                     Math.random() * (entityMoves.moves.length)
@@ -395,10 +403,10 @@ class NpcState extends I_GameState {
 
     hasRemainingActiveEntities() {
 
-        if(!this.entities) return false;
+        if(!this._entities) return false;
 
-        for(let entity in this.entities) {
-            if(this.entities[entity].getState() == EntityState.ACTIVE) return true;
+        for(let entity in this._entities) {
+            if(this._entities[entity].getState() == EntityState.ACTIVE) return true;
         }
 
         return false;
@@ -406,25 +414,25 @@ class NpcState extends I_GameState {
 
     resetEntityStatus() {
 
-        for(let entity in this.entities) {
-            this.entities[entity].setState(EntityState.ACTIVE);
+        for(let entity in this._entities) {
+            this._entities[entity].setState(EntityState.ACTIVE);
         }
     }
 }
 
 class GameContext {
     constructor() {
-        this.state = null;
+        this._state = null;
     }
 
-    setState(state) {
+    set state(state) {
         if(state instanceof I_GameState) {
-            this.state = state;
+            this._state = state;
         }
     }
 
-    getState() {
-        return this.state;
+    get state() {
+        return this._state;
     }
 }
 
@@ -553,12 +561,14 @@ function render(layer = CanvasLayers.ALL) {
     if(layer == CanvasLayers.ALL || layer == CanvasLayers.BACKGROUND) {
         imgMap.src = 'img/SimpleRPGmap2.png';
 
-        let drawImg = function(img) {
-            ctx.drawImage(img, 0, 0, worldWidth, worldHeight);
-        };
+        let drawImg = (function() {
+            return function() {
+                ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
+            }
+        })();
 
-        if(imgMap.complete) { drawImg(imgMap); }
-        else { imgMap.onload(drawImg(imgMap)); }
+        if(imgMap.complete) { drawImg(); }
+        else { imgMap.onload = drawImg; }
     }
 
     if(layer == CanvasLayers.ALL || layer == CanvasLayers.ENTITIES) {
@@ -573,18 +583,20 @@ function render(layer = CanvasLayers.ALL) {
                     // if the image isn't loaded then add
                     // this function to the image's onload
                     // event handler
-                    let drawImg = function(img) {
-                            ctx1.drawImage(
-                                img,
-                                loc[X] * tileWidth, loc[Y] * tileHeight,
-                                32,
-                                32
-                            );
-                        },
-                        img = entities[prop][entity].getImg();
+                    let img = entities[prop][entity].getImg(),
+                        drawImg = (function() {
+                            return function () {
+                                ctx1.drawImage(
+                                    img,
+                                    loc[X] * tileWidth, loc[Y] * tileHeight,
+                                    32,
+                                    32
+                                );
+                            };
+                        })();
 
-                    if(img.complete) { drawImg(img); }
-                    else { img.onload(drawImg(img)); }
+                    if(img.complete) { drawImg(); }
+                    else { img.onload = drawImg; }
                 }
             }
         }
@@ -603,16 +615,16 @@ function start() {
 
 function update() {
 
-    if(gameContext.getState().hasRemainingActiveEntities()) { return; }
+    if(gameContext.state.hasRemainingActiveEntities()) { return; }
 
-    gameContext.getState().resetEntityStatus();
+    gameContext.state.resetEntityStatus();
 
      do {
         states[
-        (gameContext.getState().getAffiliation() + 1)
+        (gameContext.state.affiliation + 1)
         % Object.keys(states).length
             ].startAction(gameContext);
-    } while(gameContext.getState() instanceof NpcState);
+    } while(gameContext.state instanceof NpcState);
 }
 
 function isEqual(array1, array2) {
