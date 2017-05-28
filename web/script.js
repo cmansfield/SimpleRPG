@@ -251,10 +251,10 @@ class Sprite {
                         0,                          // Source y
                         w,                          // Source width
                         h,                          // Source height
-                        loc[X] * tileWidth + Sprite.idle[Sprite.tick][X],         // Destination x
-                        loc[Y] * tileHeight + Sprite.idle[Sprite.tick][Y],        // Destination y
+                        loc[X] * tileWidth /*+ Sprite.idle[Sprite.tick][X]*/,       // Destination x
+                        loc[Y] * tileHeight - Sprite.idle[Sprite.tick][Y],          // Destination y
                         tileWidth,                  // Desintation width
-                        tileHeight                  // Desintation height
+                        tileHeight + Sprite.idle[Sprite.tick][Y]                    // Desintation height
                     );
                 };
             })();
@@ -268,7 +268,7 @@ class Sprite {
     }
 }
 Sprite.tick = 0;
-Sprite.idle = [[-1,1], [0,0], [1,1]];
+Sprite.idle = [[0,0], [0,2]];
 
 
 class I_PersonFac {
