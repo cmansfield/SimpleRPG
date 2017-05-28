@@ -3,6 +3,11 @@
 
 
 const X = 0, Y = 1,
+    tileWidth = 32,
+    tileHeight = 32,
+    worldWidth = 800,
+    worldHeight = 800,
+    idleAnimationDuration = 800,
     UnitType = Object.freeze({
         HERO: 1,
         AXE: 2
@@ -114,7 +119,7 @@ class Person {
         this._y = 0;
 
         this._hands = [null, null];
-        this._img = '';
+        this._sprite = null;
         this._state = EntityState.ACTIVE;
     }
 
@@ -126,10 +131,10 @@ class Person {
     getHealth() { return this._health; }
     getAutonomy() { return this._isAutonomous; }
     getLocation() { return [this._x, this._y]; }
-    getImg() { return this._img; }
+    getSprite() { return this._sprite; }
     getState() { return this._state; }
 
-    setImage(img) { this._img = img; }
+    setSprite(sprite) { this._sprite = sprite; }
     setState(state) { this._state = state; }
     setLocation(x, y) { this._x = x; this._y = y; }
 
@@ -224,11 +229,46 @@ class Person {
 
 
 class Sprite {
-    constructor() {
-
+    constructor(imgSrc, spriteWidth, spriteHeight, context) {
+        this._img = new Image();
+        this._img.src = imgSrc;
+        this._width = spriteWidth;
+        this._height = spriteHeight;
+        this._ctx = context;
     }
 
+    render(loc) {
+
+        let context = this._ctx,
+            img = this._img,
+            w = this._width,
+            h = this._height,
+            drawImg = (function() {
+                return function () {
+                    context.drawImage(
+                        img,
+                        0,                          // Source x
+                        0,                          // Source y
+                        w,                          // Source width
+                        h,                          // Source height
+                        loc[X] * tileWidth + Sprite.idle[Sprite.tick][X],         // Destination x
+                        loc[Y] * tileHeight + Sprite.idle[Sprite.tick][Y],        // Destination y
+                        tileWidth,                  // Desintation width
+                        tileHeight                  // Desintation height
+                    );
+                };
+            })();
+
+        if(img.complete) { drawImg(); }
+        else { img.onload = drawImg; }
+    }
+
+    static increaseTick() {
+        Sprite.tick = (Sprite.tick + 1) % Sprite.idle.length;
+    }
 }
+Sprite.tick = 0;
+Sprite.idle = [[-1,1], [0,0], [1,1]];
 
 
 class I_PersonFac {
@@ -244,8 +284,9 @@ class I_PersonFac {
 }
 
 class GoodPersonFac extends I_PersonFac {
-    constructor() {
+    constructor(context) {
         super();
+        this._ctx = context;
     }
 
     generate(loc, typeOfUnit = UnitType.HERO, lvl = 1, isAutonomous = false, name = 'Hero') {
@@ -257,9 +298,8 @@ class GoodPersonFac extends I_PersonFac {
         }
 
         if(typeOfUnit == UnitType.HERO) {
-            let img = new Image();
-            img.src = 'img/People/lyn_bladelord_sword.png';
-            person.setImage(img);
+            let sprite = new Sprite('img/People/lyn_bladelord_sword.png', 40, 40, this._ctx);
+            person.setSprite(sprite);
             person.rightHandEquipt(new Sword());
         }
         else {
@@ -271,8 +311,9 @@ class GoodPersonFac extends I_PersonFac {
 }
 
 class BadPersonFac extends I_PersonFac {
-    constructor() {
+    constructor(context) {
         super();
+        this._ctx = context;
     }
 
     generate(loc, typeOfUnit = UnitType.AXE, lvl = 1, isAutonomous = true, name = 'Bandit') {
@@ -286,9 +327,8 @@ class BadPersonFac extends I_PersonFac {
         person.gainExp = (exp) => {};
 
         if(typeOfUnit == UnitType.AXE) {
-            let img = new Image();
-            img.src = 'img/People/bandit_axe.png';
-            person.setImage(img);
+            let sprite = new Sprite('img/People/bandit_axe.png', 50, 50, this._ctx);
+            person.setSprite(sprite);
             person.leftHandEquipt(new Axe());
         }
         else {
@@ -300,13 +340,13 @@ class BadPersonFac extends I_PersonFac {
 }
 
 class AbsFacPerson {
-    static generate(affiliation = AffiliationEnum.NEUTRAL) {
+    static generate(context, affiliation = AffiliationEnum.NEUTRAL) {
         if(affiliation == AffiliationEnum.GOOD) {
-            return new GoodPersonFac();
+            return new GoodPersonFac(context);
         }
 
         if(affiliation == AffiliationEnum.BAD) {
-            return new BadPersonFac();
+            return new BadPersonFac(context);
         }
 
         if(affiliation == AffiliationEnum.NEUTRAL) { return null; }
@@ -445,11 +485,6 @@ class GameContext {
 
 // ************ Populate Page ************
 
-const tileWidth = 32,
-    tileHeight = 32,
-    worldWidth = 800,
-    worldHeight = 800;
-
 let canvas,
     ctx,
     layer1,
@@ -468,10 +503,10 @@ let canvas,
     VALID_PATH_MAP,
     goodEntityFac,
     badEntityFac,
-    entities;
-
-let gameContext,
-    states;
+    entities,
+    gameContext,
+    states,
+    interval;
 
 // ************ Functions ************
 
@@ -520,8 +555,8 @@ function init() {
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
         [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1]
     ];
-    goodEntityFac = AbsFacPerson.generate(AffiliationEnum.GOOD);
-    badEntityFac = AbsFacPerson.generate(AffiliationEnum.BAD);
+    goodEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.GOOD);
+    badEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.BAD);
     entities = {
         enemies: [
             badEntityFac.generate([17,2], UnitType.AXE, 4, false, 'Bandit'),
@@ -560,6 +595,11 @@ function init() {
     };
 
     layer2.onclick = playerClickEvent;
+
+    interval = setInterval(() => {
+        Sprite.increaseTick();
+        render(CanvasLayers.ENTITIES);
+    }, idleAnimationDuration);
 }
 
 function render(layer = CanvasLayers.ALL) {
@@ -582,27 +622,7 @@ function render(layer = CanvasLayers.ALL) {
         for(let prop in entities) {
             if (entities.hasOwnProperty(prop)) {
                 for(let entity of entities[prop]) {
-                    let loc = entity.getLocation();
-
-                    // Creat a drawing function to execute
-                    // only if the image is fully loaded
-                    // if the image isn't loaded then add
-                    // this function to the image's onload
-                    // event handler
-                    let img = entity.getImg(),
-                        drawImg = (function() {
-                            return function () {
-                                ctx1.drawImage(
-                                    img,
-                                    loc[X] * tileWidth, loc[Y] * tileHeight,
-                                    32,
-                                    32
-                                );
-                            };
-                        })();
-
-                    if(img.complete) { drawImg(); }
-                    else { img.onload = drawImg; }
+                    entity.getSprite().render(entity.getLocation());
                 }
             }
         }
