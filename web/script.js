@@ -737,23 +737,19 @@ function getEntityMoves(coords, speed) {
 }
 
 function findEntity(loc) {
-    let entity = [];
+    let entity = null;
 
     for(let i in entities) {
         if(entities.hasOwnProperty(i)) {
-            entity.push(entities[i].reduce(
-                (a, b) => (isEqual(b.getLocation(), loc) ? b : a),
-                null
-            ));
+            entity = entities[i].find(
+                (a) => isEqual(a.getLocation(), loc)
+            );
         }
+
+        if(entity) break;
     }
 
-    // Remove null values
-    entity = entity.filter((a) => a);
-
-    if(entity.length) { return entity[0]; }
-
-    return null;
+    return entity;
 }
 
 function removeEntity(entityToRem) {
