@@ -528,8 +528,6 @@ function init() {
         2: new NpcState(entities.enemies)
     };
 
-    imgMap.src = 'img/SimpleRPGmap.png';
-    ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
 
     render();
 
@@ -552,6 +550,17 @@ function init() {
 
 function render(layer = CanvasLayers.ALL) {
 
+    if(layer == CanvasLayers.ALL || layer == CanvasLayers.BACKGROUND) {
+        imgMap.src = 'img/SimpleRPGmap2.png';
+
+        let drawImg = function(img) {
+            ctx.drawImage(img, 0, 0, worldWidth, worldHeight);
+        };
+
+        if(imgMap.complete) { drawImg(imgMap); }
+        else { imgMap.onload(drawImg(imgMap)); }
+    }
+
     if(layer == CanvasLayers.ALL || layer == CanvasLayers.ENTITIES) {
         ctx1.clearRect(0, 0, worldWidth, worldHeight);
         for(let prop in entities) {
@@ -559,6 +568,11 @@ function render(layer = CanvasLayers.ALL) {
                 for(let entity in entities[prop]) {
                     let loc = entities[prop][entity].getLocation();
 
+                    // Creat a drawing function to execute
+                    // only if the image is fully loaded
+                    // if the image isn't loaded then add
+                    // this function to the image's onload
+                    // event handler
                     let drawImg = function(img) {
                             ctx1.drawImage(
                                 img,
@@ -638,6 +652,11 @@ function getNeighbors(loc) {
 function showEntityMoves(validMoves, context) {
 
     context.fillStyle = '#ff5b62';
+
+    imgMap.src = 'img/SimpleRPGmap.png';
+    ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
+
+    render(CanvasLayers.ENTITIES);
 
     for(let i = 0; i < numTilesX; ++i) {
         for(let j = 0; j < numTilesY; ++j) {
@@ -803,7 +822,8 @@ function playerClickEvent(evt) {
         };
 
         if(isEqual(selectedCoords, currentSelectedCoords)) {
-            render(CanvasLayers.FOG);
+            //render(CanvasLayers.FOG);
+            render();
             selectedCoords = [];
             selectedUnit = null;
             return;
