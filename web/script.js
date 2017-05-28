@@ -1,25 +1,28 @@
 
-const X = 0, Y = 1;
-var UnitType = Object.freeze({
-    HERO: 1,
-    AXE: 2
-});
-var AffiliationEnum = Object.freeze({
-    GOOD: 0,
-    NEUTRAL: 1,
-    BAD: 2
-});
-var CanvasLayers = Object.freeze({
-    ALL: 1,
-    BACKGROUND: 2,
-    ENTITIES: 3,
-    FOG: 4,
-    MENU: 5
-});
-var EntityState = Object.freeze({
-    ACTIVE: 1,
-    INACTIVE: 2
-});
+//import {Person} from './classes/entities.js';
+
+
+const X = 0, Y = 1,
+    UnitType = Object.freeze({
+        HERO: 1,
+        AXE: 2
+    }),
+    AffiliationEnum = Object.freeze({
+        GOOD: 0,
+        NEUTRAL: 1,
+        BAD: 2
+    }),
+    CanvasLayers = Object.freeze({
+        ALL: 1,
+        BACKGROUND: 2,
+        ENTITIES: 3,
+        FOG: 4,
+        MENU: 5
+    }),
+    EntityState = Object.freeze({
+        ACTIVE: 1,
+        INACTIVE: 2
+    });
 
 
 class I_CombatItem {
@@ -67,12 +70,12 @@ class Axe extends I_CombatItem {
     getValue() { return this._value; }
 }
 
-class Sheild extends I_CombatItem {
+class Shield extends I_CombatItem {
     constructor() {
         super();
         this._attack = 0;
         this._defence = 3;
-        this._name = 'Small Sheild';
+        this._name = 'Small Shield';
         this._value = 12;
     }
 
@@ -80,14 +83,6 @@ class Sheild extends I_CombatItem {
     def() { return this._defence; }
     getName() { return this._name; }
     getValue() { return this._value; }
-}
-
-
-class Sprite {
-    constructor() {
-
-    }
-
 }
 
 
@@ -141,8 +136,8 @@ class Person {
     attack() {
         let dmg = this._str;
 
-        for(let item in this._hands) {
-            this._hands[item] instanceof I_CombatItem && (dmg += this._hands[item].atk());
+        for(let item of this._hands) {
+            item instanceof I_CombatItem && (dmg += item.atk());
         }
 
         return dmg;
@@ -151,8 +146,8 @@ class Person {
     defend() {
         let def = this._dex;
 
-        for(let item in this._hands) {
-            this._hands[item] instanceof I_CombatItem && (def += this._hands[item].def());
+        for(let item of this._hands) {
+            item instanceof I_CombatItem && (def += item.def());
         }
 
         return def;
@@ -225,6 +220,14 @@ class Person {
             + '\nattack: ' + this.attack()
             + '\ndefense: ' + this.defend();
     }
+}
+
+
+class Sprite {
+    constructor() {
+
+    }
+
 }
 
 
@@ -348,8 +351,10 @@ class PlayerState extends I_GameState {
 
     hasRemainingActiveEntities() {
 
-        for(let entity in this._entities) {
-            if(this._entities[entity].getState() == EntityState.ACTIVE) return true;
+        if(!this._entities) return false;
+
+        for(let entity of this._entities) {
+            if(entity.getState() == EntityState.ACTIVE) return true;
         }
 
         return false;
@@ -357,8 +362,8 @@ class PlayerState extends I_GameState {
 
     resetEntityStatus() {
 
-        for(let entity in this._entities) {
-            this._entities[entity].setState(EntityState.ACTIVE);
+        for(let entity of this._entities) {
+            entity.setState(EntityState.ACTIVE);
         }
     }
 }
@@ -379,11 +384,12 @@ class NpcState extends I_GameState {
 
         layer2.onclick = (evt) => {};
 
-        for(let entity in this._entities) {
+        if(!this._entities) return;
 
-            if(!this._entities[entity].getAutonomy()) continue;
+        for(let entity of this._entities) {
 
-            entity = this._entities[entity];
+            if(!entity.getAutonomy()) continue;
+
             let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
                 selectedMove = Math.floor(
                     Math.random() * (entityMoves.moves.length)
@@ -405,8 +411,8 @@ class NpcState extends I_GameState {
 
         if(!this._entities) return false;
 
-        for(let entity in this._entities) {
-            if(this._entities[entity].getState() == EntityState.ACTIVE) return true;
+        for(let entity of this._entities) {
+            if(entity.getState() == EntityState.ACTIVE) return true;
         }
 
         return false;
@@ -414,8 +420,8 @@ class NpcState extends I_GameState {
 
     resetEntityStatus() {
 
-        for(let entity in this._entities) {
-            this._entities[entity].setState(EntityState.ACTIVE);
+        for(let entity of this._entities) {
+            entity.setState(EntityState.ACTIVE);
         }
     }
 }
@@ -444,7 +450,7 @@ const tileWidth = 32,
     worldWidth = 800,
     worldHeight = 800;
 
-var canvas,
+let canvas,
     ctx,
     layer1,
     ctx1,
@@ -554,7 +560,7 @@ function init() {
     };
 
     layer2.onclick = playerClickEvent;
-};
+}
 
 function render(layer = CanvasLayers.ALL) {
 
@@ -575,15 +581,15 @@ function render(layer = CanvasLayers.ALL) {
         ctx1.clearRect(0, 0, worldWidth, worldHeight);
         for(let prop in entities) {
             if (entities.hasOwnProperty(prop)) {
-                for(let entity in entities[prop]) {
-                    let loc = entities[prop][entity].getLocation();
+                for(let entity of entities[prop]) {
+                    let loc = entity.getLocation();
 
                     // Creat a drawing function to execute
                     // only if the image is fully loaded
                     // if the image isn't loaded then add
                     // this function to the image's onload
                     // event handler
-                    let img = entities[prop][entity].getImg(),
+                    let img = entity.getImg(),
                         drawImg = (function() {
                             return function () {
                                 ctx1.drawImage(
@@ -645,9 +651,7 @@ function getNeighbors(loc) {
 
     if(!loc) return [];
 
-    for(let offset in offsets) {
-        let pos = offsets[offset];
-
+    for(let pos of offsets) {
         for(let i in loc) pos[i] += loc[i];
 
         if(
@@ -718,11 +722,11 @@ function getEntityMoves(coords, speed) {
         }
 
         let neighbors = getNeighbors(current);
-        for(let next in neighbors) {
-            if(visited.has(neighbors[next].toString())) continue;
+        for(let next of neighbors) {
+            if(visited.has(next.toString())) continue;
 
-            frontier.push(neighbors[next]);
-            visited.add(neighbors[next].toString());
+            frontier.push(next);
+            visited.add(next.toString());
         }
     }
 
@@ -784,7 +788,8 @@ function fight(attacker, defender) {
         let giveReward = (unit1, unit2) => {
             const BASE_EXP = 50,
                 BONUS_EXP = 20,
-                NONWIN_EXP = 10
+                NONWIN_EXP = 10;
+
             if(unit1.getHealth() <= 0) {
                 let lvlDiff = unit1.getLvl() - unit2.getLvl(),
                     exp = BASE_EXP;
@@ -795,7 +800,7 @@ function fight(attacker, defender) {
                 unit2.gainExp(exp);
             }
             else { unit1.gainExp(NONWIN_EXP); }
-        }
+        };
 
         giveReward(a, b);
         giveReward(b, a);
@@ -858,11 +863,11 @@ function playerClickEvent(evt) {
 
                 if(!tilesNextToEntity.length) return;
 
-                for(let tile in tilesNextToEntity) {
-                    if(selectedUnitsMoves['movesSet'].has(tilesNextToEntity[tile].toString())) {
+                for(let tile of tilesNextToEntity) {
+                    if(selectedUnitsMoves['movesSet'].has(tile.toString())) {
                         selectedUnit.setLocation(
-                            tilesNextToEntity[tile][X],
-                            tilesNextToEntity[tile][Y]);
+                            tile[X],
+                            tile[Y]);
                         selectedCoords = [];
                         break;
                     }
