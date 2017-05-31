@@ -386,506 +386,523 @@ class AbsFacPerson {
 }
 
 
-class I_GameState {
-    constructor() {
-        if(new.target === I_GameState) {
-            throw new TypeError('Cannot construct Abstract instances directly');
-        }
 
-        if(
-            this.startAction === undefined
-            && this.affiliation === undefined
-            && this.hasRemainingActiveEntities === undefined
-            && this.resetEntityStatus === undefined
-        ) { throw new TypeError('Must override required methods'); }
-    }
-}
+// Create a singleton gameManager object
+let gameManager = function() {
+    let canvas,
+        ctx,
+        layer1,
+        ctx1,
+        layer2,
+        ctx2,
+        output,
+        imgMap,
+        selectedUnit,
+        selectedUnitsMoves,
+        selectedCoords,
+        hoverCoords,
+        numTilesX,
+        numTilesY,
+        getCoords,
+        VALID_PATH_MAP,
+        goodEntityFac,
+        badEntityFac,
+        entities,
+        gameContext,
+        states,
+        interval;
 
-class PlayerState extends I_GameState {
-    constructor(entities, affiliation = AffiliationEnum.GOOD) {
-        super();
-        this._affiliation = affiliation;
-        this._entities = entities;
-    }
 
-    get affiliation() { return this._affiliation; }
-
-    startAction(gameContext) {
-
-        if(gameContext instanceof GameContext) {
-            gameContext.state = this;
-        }
-
-        layer2.onclick = playerClickEvent;
-    }
-
-    hasRemainingActiveEntities() {
-
-        if(!this._entities) return false;
-
-        for(let entity of this._entities) {
-            if(entity.getState() == EntityState.ACTIVE) return true;
-        }
-
-        return false;
-    }
-
-    resetEntityStatus() {
-
-        for(let entity of this._entities) {
-            entity.setState(EntityState.ACTIVE);
-        }
-    }
-}
-
-class NpcState extends I_GameState {
-    constructor(entities, affiliation = AffiliationEnum.BAD) {
-        super();
-        this._affiliation = affiliation;
-        this._entities = entities;
-    }
-
-    get affiliation() { return this._affiliation; }
-
-    startAction(gameContext) {
-        if(gameContext instanceof GameContext) {
-            gameContext.state = this;
-        }
-
-        layer2.onclick = (evt) => {};
-
-        if(!this._entities) return;
-
-        for(let entity of this._entities) {
-
-            if(!entity.getAutonomy()) continue;
-
-            let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
-                selectedMove = Math.floor(
-                    Math.random() * (entityMoves.moves.length)
-                );
-
-            while(findEntity(entityMoves.moves[selectedMove])) {
-                selectedMove = (selectedMove + 1) % entityMoves.moves.length;
+    class I_GameState {
+        constructor() {
+            if(new.target === I_GameState) {
+                throw new TypeError('Cannot construct Abstract instances directly');
             }
 
-            entity.setLocation(
-                entityMoves.moves[selectedMove][X],
-                entityMoves.moves[selectedMove][Y]
-            );
-            render(CanvasLayers.ENTITIES);
+            if(
+                this.startAction === undefined
+                && this.affiliation === undefined
+                && this.hasRemainingActiveEntities === undefined
+                && this.resetEntityStatus === undefined
+            ) { throw new TypeError('Must override required methods'); }
         }
     }
 
-    hasRemainingActiveEntities() {
-
-        if(!this._entities) return false;
-
-        for(let entity of this._entities) {
-            if(entity.getState() == EntityState.ACTIVE) return true;
+    class PlayerState extends I_GameState {
+        constructor(entities, affiliation = AffiliationEnum.GOOD) {
+            super();
+            this._affiliation = affiliation;
+            this._entities = entities;
         }
 
-        return false;
-    }
+        get affiliation() { return this._affiliation; }
 
-    resetEntityStatus() {
+        startAction(gameContext) {
 
-        for(let entity of this._entities) {
-            entity.setState(EntityState.ACTIVE);
+            if(gameContext instanceof GameContext) {
+                gameContext.state = this;
+            }
+
+            layer2.onclick = playerClickEvent;
+        }
+
+        hasRemainingActiveEntities() {
+
+            if(!this._entities) return false;
+
+            for(let entity of this._entities) {
+                if(entity.getState() == EntityState.ACTIVE) return true;
+            }
+
+            return false;
+        }
+
+        resetEntityStatus() {
+
+            for(let entity of this._entities) {
+                entity.setState(EntityState.ACTIVE);
+            }
         }
     }
-}
 
-class GameContext {
-    constructor() {
-        this._state = null;
-    }
+    class NpcState extends I_GameState {
+        constructor(entities, affiliation = AffiliationEnum.BAD) {
+            super();
+            this._affiliation = affiliation;
+            this._entities = entities;
+        }
 
-    set state(state) {
-        if(state instanceof I_GameState) {
-            this._state = state;
+        get affiliation() { return this._affiliation; }
+
+        startAction(gameContext) {
+            if(gameContext instanceof GameContext) {
+                gameContext.state = this;
+            }
+
+            layer2.onclick = (evt) => {};
+
+            if(!this._entities) return;
+
+            for(let entity of this._entities) {
+
+                if(!entity.getAutonomy()) continue;
+
+                let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
+                    selectedMove = Math.floor(
+                        Math.random() * (entityMoves.moves.length)
+                    );
+
+                while(findEntity(entityMoves.moves[selectedMove])) {
+                    selectedMove = (selectedMove + 1) % entityMoves.moves.length;
+                }
+
+                entity.setLocation(
+                    entityMoves.moves[selectedMove][X],
+                    entityMoves.moves[selectedMove][Y]
+                );
+                render(CanvasLayers.ENTITIES);
+            }
+        }
+
+        hasRemainingActiveEntities() {
+
+            if(!this._entities) return false;
+
+            for(let entity of this._entities) {
+                if(entity.getState() == EntityState.ACTIVE) return true;
+            }
+
+            return false;
+        }
+
+        resetEntityStatus() {
+
+            for(let entity of this._entities) {
+                entity.setState(EntityState.ACTIVE);
+            }
         }
     }
 
-    get state() {
-        return this._state;
+    class GameContext {
+        constructor() {
+            this._state = null;
+        }
+
+        set state(state) {
+            if(state instanceof I_GameState) {
+                this._state = state;
+            }
+        }
+
+        get state() {
+            return this._state;
+        }
     }
-}
 
-
-// ************ Populate Page ************
-
-let canvas,
-    ctx,
-    layer1,
-    ctx1,
-    layer2,
-    ctx2,
-    output,
-    imgMap,
-    selectedUnit,
-    selectedUnitsMoves,
-    selectedCoords,
-    hoverCoords,
-    numTilesX ,
-    numTilesY,
-    getCoords,
-    VALID_PATH_MAP,
-    goodEntityFac,
-    badEntityFac,
-    entities,
-    gameContext,
-    states,
-    interval;
 
 // ************ Functions ************
 
-function init() {
-    canvas = document.getElementById('main');
-    ctx = canvas.getContext('2d');
-    layer1 = document.getElementById('layer1');
-    ctx1 = layer1.getContext('2d');
-    layer2 = document.getElementById('layer2');
-    ctx2 = layer2.getContext('2d');
-    output = document.getElementById('entityInfo');
-    imgMap = new Image();
+    function init() {
+        canvas = document.getElementById('main');
+        ctx = canvas.getContext('2d');
+        layer1 = document.getElementById('layer1');
+        ctx1 = layer1.getContext('2d');
+        layer2 = document.getElementById('layer2');
+        ctx2 = layer2.getContext('2d');
+        output = document.getElementById('entityInfo');
+        imgMap = new Image();
 
-    numTilesX = worldWidth / tileWidth;
-    numTilesY = worldHeight / tileHeight;
-    getCoords = (x, y) => {
-    var xCoord = Math.floor(x / tileWidth),
-        yCoord = Math.floor(y / tileHeight);
+        numTilesX = worldWidth / tileWidth;
+        numTilesY = worldHeight / tileHeight;
+        getCoords = (x, y) => {
+            var xCoord = Math.floor(x / tileWidth),
+                yCoord = Math.floor(y / tileHeight);
 
-    return [xCoord, yCoord];
-};
-    VALID_PATH_MAP = [
-        [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1],
-        [0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1],
-        [0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1],
-        [0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [0,0,0,0,0,0,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1],
-        [0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1],
-        [0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1,1],
-        [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,1]
-    ];
-    goodEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.GOOD);
-    badEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.BAD);
-    entities = {
-        enemies: [
-            badEntityFac.generate([17,2], UnitType.SWORD, 4, false, 'Denning'),
-            badEntityFac.generate([15,2]),
-            badEntityFac.generate([18,4]),
-            badEntityFac.generate([17,5]),
-            badEntityFac.generate([12,6])
-        ],
-        allies: [
-            goodEntityFac.generate([3,22]),
-            goodEntityFac.generate([5, 21], UnitType.SWORD, 2, false, 'Kent')
-        ]
-    };
+            return [xCoord, yCoord];
+        };
+        VALID_PATH_MAP = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            [0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1]
+        ];
+        goodEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.GOOD);
+        badEntityFac = AbsFacPerson.generate(ctx1, AffiliationEnum.BAD);
+        entities = {
+            enemies: [
+                badEntityFac.generate([17, 2], UnitType.SWORD, 4, false, 'Denning'),
+                badEntityFac.generate([15, 2]),
+                badEntityFac.generate([18, 4]),
+                badEntityFac.generate([17, 5]),
+                badEntityFac.generate([12, 6])
+            ],
+            allies: [
+                goodEntityFac.generate([3, 22]),
+                goodEntityFac.generate([5, 21], UnitType.SWORD, 2, false, 'Kent')
+            ]
+        };
 
-    gameContext = new GameContext();
-    states = {
-        0: new PlayerState(entities.allies),
-        1: new NpcState(null, AffiliationEnum.NEUTRAL),
-        2: new NpcState(entities.enemies)
-    };
+        gameContext = new GameContext();
+        states = {
+            0: new PlayerState(entities.allies),
+            1: new NpcState(null, AffiliationEnum.NEUTRAL),
+            2: new NpcState(entities.enemies)
+        };
 
 
-    render();
+        render();
 
-    layer2.onmousemove = (evt) => {
+        layer2.onmousemove = (evt) => {
 
-        let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
+            let currentHoverCoords = getCoords(evt.layerX, evt.layerY);
 
-        if(isEqual(hoverCoords, currentHoverCoords)) return;
-        hoverCoords = currentHoverCoords;
+            if (isEqual(hoverCoords, currentHoverCoords)) return;
+            hoverCoords = currentHoverCoords;
 
-        let entity = findEntity(hoverCoords);
+            let entity = findEntity(hoverCoords);
 
-        //entity.length && console.log(entity[0].toString());
-        if(entity) { output.innerHTML = entity.toString(); }
-        else { output.innerHTML = ' '; }
-    };
-
-    layer2.onclick = playerClickEvent;
-
-    interval = setInterval(() => {
-        Sprite.increaseTick();
-        render(CanvasLayers.ENTITIES);
-    }, idleAnimationDuration);
-}
-
-function render(layer = CanvasLayers.ALL) {
-
-    if(layer == CanvasLayers.ALL || layer == CanvasLayers.BACKGROUND) {
-        imgMap.src = 'img/SimpleRPGmap2.png';
-
-        let drawImg = (function() {
-            return function() {
-                ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
+            //entity.length && console.log(entity[0].toString());
+            if (entity) {
+                output.innerHTML = entity.toString();
             }
-        })();
+            else {
+                output.innerHTML = ' ';
+            }
+        };
 
-        if(imgMap.complete) { drawImg(); }
-        else { imgMap.onload = drawImg; }
+        layer2.onclick = playerClickEvent;
+
+        interval = setInterval(() => {
+            Sprite.increaseTick();
+            render(CanvasLayers.ENTITIES);
+        }, idleAnimationDuration);
     }
 
-    if(layer == CanvasLayers.ALL || layer == CanvasLayers.ENTITIES) {
-        ctx1.clearRect(0, 0, worldWidth, worldHeight);
-        for(let prop in entities) {
-            if (entities.hasOwnProperty(prop)) {
-                for(let entity of entities[prop]) {
-                    entity.getSprite().render(entity.getLocation());
+    function render(layer = CanvasLayers.ALL) {
+
+        if (layer == CanvasLayers.ALL || layer == CanvasLayers.BACKGROUND) {
+            imgMap.src = 'img/SimpleRPGmap2.png';
+
+            let drawImg = (function () {
+                return function () {
+                    ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
+                }
+            })();
+
+            if (imgMap.complete) {
+                drawImg();
+            }
+            else {
+                imgMap.onload = drawImg;
+            }
+        }
+
+        if (layer == CanvasLayers.ALL || layer == CanvasLayers.ENTITIES) {
+            ctx1.clearRect(0, 0, worldWidth, worldHeight);
+            for (let prop in entities) {
+                if (entities.hasOwnProperty(prop)) {
+                    for (let entity of entities[prop]) {
+                        entity.getSprite().render(entity.getLocation());
+                    }
+                }
+            }
+        }
+
+        if (layer == CanvasLayers.ALL || layer == CanvasLayers.FOG) {
+            ctx2.clearRect(0, 0, worldWidth, worldHeight);
+            ctx2.globalAlpha = 0.4;
+        }
+    }
+
+    function start() {
+
+        states[AffiliationEnum.GOOD].startAction(gameContext);
+    }
+
+    function update() {
+
+        if (gameContext.state.hasRemainingActiveEntities()) {
+            return;
+        }
+
+        gameContext.state.resetEntityStatus();
+
+        do {
+            states[
+            (gameContext.state.affiliation + 1)
+            % Object.keys(states).length
+                ].startAction(gameContext);
+        } while (gameContext.state instanceof NpcState);
+    }
+
+    function isEqual(array1, array2) {
+
+        if (!array1 || !array2) return false;
+        if (array1.length != array2.length) return false;
+
+        for (let coord in array1) {
+            if (array1[coord] != array2[coord]) return false;
+        }
+
+        return true;
+    }
+
+    function getNeighbors(loc) {
+        let offsets = [[1, 0], [0, 1], [-1, 0], [0, -1]],
+            neighbors = [];
+
+        if (!loc) return [];
+
+        for (let pos of offsets) {
+            for (let i in loc) pos[i] += loc[i];
+
+            if (
+                pos[X] < numTilesX
+                && pos[Y] < numTilesY
+                && pos[X] >= 0
+                && pos[Y] >= 0
+            ) {
+                VALID_PATH_MAP[pos[Y]][pos[X]] && neighbors.push(pos);
+            }
+        }
+
+        return neighbors;
+    }
+
+    function showEntityMoves(validMoves, context) {
+
+        context.fillStyle = '#ff5b62';
+
+        imgMap.src = 'img/SimpleRPGmap.png';
+        ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
+
+        render(CanvasLayers.ENTITIES);
+
+        for (let i = 0; i < numTilesX; ++i) {
+            for (let j = 0; j < numTilesY; ++j) {
+                if (!validMoves['movesSet'].has([i, j].toString())) {
+                    context.fillRect(
+                        (i * tileWidth) + 1,
+                        (j * tileHeight) + 1,
+                        tileWidth, tileHeight
+                    );
                 }
             }
         }
     }
 
-    if(layer == CanvasLayers.ALL || layer == CanvasLayers.FOG) {
-        ctx2.clearRect(0, 0, worldWidth, worldHeight);
-        ctx2.globalAlpha = 0.4;
-    }
-}
+    function getEntityMoves(coords, speed) {
+        let frontier = [],
+            visited = new Set(),
+            moves = [],
+            boundary = new Set(),
+            current,
+            isInRange = (start, end, range) => {
+                let x = start[X],
+                    y = start[Y];
 
-function start() {
+                x = Math.abs(x - end[X]);
+                y = Math.abs(y - end[Y]);
+                range -= x;
 
-    states[AffiliationEnum.GOOD].startAction(gameContext);
-}
+                return (x >= 0 && y <= range);
+            };
 
-function update() {
+        render(CanvasLayers.FOG);
 
-    if(gameContext.state.hasRemainingActiveEntities()) { return; }
+        frontier.push(coords);
+        visited.add(coords.toString());
 
-    gameContext.state.resetEntityStatus();
+        while (frontier.length > 0) {
+            current = frontier.shift();
 
-     do {
-        states[
-        (gameContext.state.affiliation + 1)
-        % Object.keys(states).length
-            ].startAction(gameContext);
-    } while(gameContext.state instanceof NpcState);
-}
+            while (current && !isInRange(coords, current, speed)) {
+                current = frontier.shift();
+            }
 
-function isEqual(array1, array2) {
+            if (current) {
+                boundary.add(current.toString());
+                moves.push(current);
+            }
 
-    if(!array1 || !array2) return false;
-    if(array1.length != array2.length) return false;
+            let neighbors = getNeighbors(current);
+            for (let next of neighbors) {
+                if (visited.has(next.toString())) continue;
 
-    for(let coord in array1) {
-        if(array1[coord] != array2[coord]) return false;
-    }
+                frontier.push(next);
+                visited.add(next.toString());
+            }
+        }
 
-    return true;
-}
-
-function getNeighbors(loc) {
-    let offsets = [[1,0],[0,1],[-1,0],[0,-1]],
-        neighbors = [];
-
-    if(!loc) return [];
-
-    for(let pos of offsets) {
-        for(let i in loc) pos[i] += loc[i];
-
-        if(
-            pos[X] < numTilesX
-            && pos[Y] < numTilesY
-            && pos[X] >= 0
-            && pos[Y] >= 0
-        ) { VALID_PATH_MAP[pos[Y]][pos[X]] && neighbors.push(pos); }
+        return {
+            moves: moves,
+            movesSet: boundary
+        };
     }
 
-    return neighbors;
-}
+    function findEntity(loc) {
+        let entity = null;
 
-function showEntityMoves(validMoves, context) {
-
-    context.fillStyle = '#ff5b62';
-
-    imgMap.src = 'img/SimpleRPGmap.png';
-    ctx.drawImage(imgMap, 0, 0, worldWidth, worldHeight);
-
-    render(CanvasLayers.ENTITIES);
-
-    for(let i = 0; i < numTilesX; ++i) {
-        for(let j = 0; j < numTilesY; ++j) {
-            if(!validMoves['movesSet'].has([i,j].toString())) {
-                context.fillRect(
-                    (i * tileWidth) + 1,
-                    (j * tileHeight) + 1,
-                    tileWidth, tileHeight
+        for (let i in entities) {
+            if (entities.hasOwnProperty(i)) {
+                entity = entities[i].find(
+                    (a) => isEqual(a.getLocation(), loc)
                 );
+            }
+
+            if (entity) break;
+        }
+
+        return entity;
+    }
+
+    function removeEntity(entityToRem) {
+
+        for (let prop in entities) {
+            if (entities.hasOwnProperty(prop)) {
+                entities[prop] = entities[prop].filter((entity) => {
+                    return entity !== entityToRem;
+                });
             }
         }
     }
-}
 
-function getEntityMoves(coords, speed) {
-    let frontier = [],
-        visited = new Set(),
-        moves = [],
-        boundary = new Set(),
-        current,
-        isInRange = (start, end, range) => {
-            let x = start[X],
-                y = start[Y];
-
-            x = Math.abs(x - end[X]);
-            y = Math.abs(y - end[Y]);
-            range -= x;
-
-            return (x >= 0 && y <= range);
-        };
-
-    render(CanvasLayers.FOG);
-
-    frontier.push(coords);
-    visited.add(coords.toString());
-
-    while(frontier.length > 0) {
-        current = frontier.shift();
-
-        while(current && !isInRange(coords, current, speed)) {
-            current = frontier.shift();
+    function engage(attacker, defender) {
+        if (defender.isHit(attacker.getSpeed())) {
+            let diff = attacker.attack() - defender.defend();
+            diff > 0 && defender.takeDamage(diff);
         }
 
-        if(current) {
-            boundary.add(current.toString());
-            moves.push(current);
+        if (defender.getHealth() <= 0) {
+            return;
         }
 
-        let neighbors = getNeighbors(current);
-        for(let next of neighbors) {
-            if(visited.has(next.toString())) continue;
-
-            frontier.push(next);
-            visited.add(next.toString());
+        if (attacker.isHit(defender.getSpeed())) {
+            let diff = defender.attack() - attacker.defend();
+            diff > 0 && attacker.takeDamage(diff);
         }
     }
 
-    return {
-        moves: moves,
-        movesSet: boundary
-    };
-}
+    function fight(attacker, defender) {
+        let giveRewards = (a, b) => {
+            let giveReward = (unit1, unit2) => {
+                const BASE_EXP = 50,
+                    BONUS_EXP = 20,
+                    NONWIN_EXP = 10;
 
-function findEntity(loc) {
-    let entity = null;
-
-    for(let i in entities) {
-        if(entities.hasOwnProperty(i)) {
-            entity = entities[i].find(
-                (a) => isEqual(a.getLocation(), loc)
-            );
-        }
-
-        if(entity) break;
-    }
-
-    return entity;
-}
-
-function removeEntity(entityToRem) {
-
-    for(let prop in entities) {
-        if(entities.hasOwnProperty(prop)) {
-            entities[prop] = entities[prop].filter((entity) => {
-                return entity !== entityToRem;
-            });
-        }
-    }
-}
-
-function engage(attacker, defender) {
-    if(defender.isHit(attacker.getSpeed())) {
-        let diff = attacker.attack() - defender.defend();
-        diff > 0 && defender.takeDamage(diff);
-    }
-
-    if(defender.getHealth() <= 0) {
-        return;
-    }
-
-    if(attacker.isHit(defender.getSpeed())) {
-        let diff = defender.attack() - attacker.defend();
-        diff > 0 && attacker.takeDamage(diff);
-    }
-}
-
-function fight(attacker, defender) {
-    let giveRewards = (a, b) => {
-        let giveReward = (unit1, unit2) => {
-            const BASE_EXP = 50,
-                BONUS_EXP = 20,
-                NONWIN_EXP = 10;
-
-            if(unit1.getHealth() <= 0) {
-                let lvlDiff = unit1.getLvl() - unit2.getLvl(),
-                    exp = BASE_EXP;
+                if (unit1.getHealth() <= 0) {
+                    let lvlDiff = unit1.getLvl() - unit2.getLvl(),
+                        exp = BASE_EXP;
                     exp += (lvlDiff > 0)
                         ? BONUS_EXP * lvlDiff
                         : 0;
 
-                unit2.gainExp(exp);
-            }
-            else { unit1.gainExp(NONWIN_EXP); }
+                    unit2.gainExp(exp);
+                }
+                else {
+                    unit1.gainExp(NONWIN_EXP);
+                }
+            };
+
+            giveReward(a, b);
+            giveReward(b, a);
         };
 
-        giveReward(a, b);
-        giveReward(b, a);
-    };
+        engage(attacker, defender);
 
-    engage(attacker, defender);
-
-    giveRewards(attacker, defender);
-
-    // TODO - Remove me
-    console.log(attacker.toString());
-    console.log(defender.toString());
-    console.log('');
-
-    attacker.getHealth() <= 0 && removeEntity(attacker);
-    defender.getHealth() <= 0 && removeEntity(defender);
-
-    if(isGameOver()) {
-        layer2.onclick = () => {};
+        giveRewards(attacker, defender);
 
         // TODO - Remove me
-        console.log('Game Over');
+        console.log(attacker.toString());
+        console.log(defender.toString());
+        console.log('');
+
+        attacker.getHealth() <= 0 && removeEntity(attacker);
+        defender.getHealth() <= 0 && removeEntity(defender);
+
+        if (isGameOver()) {
+            layer2.onclick = () => {
+            };
+
+            // TODO - Remove me
+            console.log('Game Over');
+        }
     }
-}
 
-function isGameOver() {
-     return !entities.allies.length || !entities.enemies.length;
-}
+    function isGameOver() {
+        return !entities.allies.length || !entities.enemies.length;
+    }
 
-function playerClickEvent(evt) {
+    function playerClickEvent(evt) {
         let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
             moveUnit = (loc) => {
-            selectedUnit.setLocation(loc[X], loc[Y]);
-            selectedCoords = [];
-            render();
-        };
+                selectedUnit.setLocation(loc[X], loc[Y]);
+                selectedCoords = [];
+                render();
+            };
 
-        if(isEqual(selectedCoords, currentSelectedCoords)) {
+        if (isEqual(selectedCoords, currentSelectedCoords)) {
             //render(CanvasLayers.FOG);
             render();
             selectedCoords = [];
@@ -898,20 +915,19 @@ function playerClickEvent(evt) {
         // If a unit has been selected and a new tile
         // has been clicked then move the unit to that
         // location
-        if(
+        if (
             selectedUnit
             && selectedUnitsMoves
-            && selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
-        {
+            && selectedUnitsMoves['movesSet'].has(selectedCoords.toString())) {
             // If any enemy was selected then we need to
             // attack it
-            if(entity) {
+            if (entity) {
                 let tilesNextToEntity = getNeighbors(selectedCoords);
 
-                if(!tilesNextToEntity.length) return;
+                if (!tilesNextToEntity.length) return;
 
-                for(let tile of tilesNextToEntity) {
-                    if(selectedUnitsMoves['movesSet'].has(tile.toString())) {
+                for (let tile of tilesNextToEntity) {
+                    if (selectedUnitsMoves['movesSet'].has(tile.toString())) {
                         selectedUnit.setLocation(
                             tile[X],
                             tile[Y]);
@@ -935,11 +951,10 @@ function playerClickEvent(evt) {
             update();
             return;
         }
-        else if(
+        else if (
             selectedUnit
             && selectedUnitsMoves
-            && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString()))
-        {
+            && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString())) {
             // If selected outside of the unit's boundary
             // then no-op the unit and rerender the map
             moveUnit(selectedUnit.getLocation());
@@ -947,7 +962,7 @@ function playerClickEvent(evt) {
             return;
         }
 
-        if(entity && entity.getState() == EntityState.ACTIVE) {
+        if (entity && entity.getState() == EntityState.ACTIVE) {
             selectedUnitsMoves = getEntityMoves(
                 selectedCoords,
                 entity.getSpeed() + 3
@@ -955,13 +970,20 @@ function playerClickEvent(evt) {
             showEntityMoves(selectedUnitsMoves, ctx2);
         }
 
-        if(!entity) selectedUnit = null;
-        else if(!selectedUnit && entity.getState() == EntityState.ACTIVE) selectedUnit = entity;
-}
+        if (!entity) selectedUnit = null;
+        else if (!selectedUnit && entity.getState() == EntityState.ACTIVE) selectedUnit = entity;
+    }
+
+    return {
+        init: init,
+        start: start
+    };
+}();
+
 
 $(document).ready(() => {
-    init();
-    start();
+    gameManager.init();
+    gameManager.start();
 });
 
 
