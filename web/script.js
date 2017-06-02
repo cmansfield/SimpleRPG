@@ -116,8 +116,7 @@ class Person {
         this._lvl = 1;
         this._exp = 0;
         this._isAutonomous = isAutonomous;
-        this._x = 0;
-        this._y = 0;
+        this._location = new Location([0,0]);
 
         this._hands = [null, null];
         this._sprite = null;
@@ -131,13 +130,17 @@ class Person {
     getSpeed() { return this._spd; }
     getHealth() { return this._health; }
     getAutonomy() { return this._isAutonomous; }
-    getLocation() { return [this._x, this._y]; }
+    getLocation() { return this._location.location; }
     getSprite() { return this._sprite; }
     getState() { return this._state; }
 
     setSprite(sprite) { this._sprite = sprite; }
     setState(state) { this._state = state; }
-    setLocation(x, y) { this._x = x; this._y = y; }
+    setLocation(x, y) { this._location.location = [x,y]; }
+
+    gotoLocation(x, y) { this._location.gotoLocation = [x,y]; }
+    hasArrived() { return this._location.hasArrived(); }
+    move() { this._location.move(); }
 
     attack() {
         let dmg = this._str;
@@ -230,6 +233,76 @@ class Person {
             + '\nspd: ' + this._spd
             + '\nattack: ' + this.attack()
             + '\ndefense: ' + this.defend();
+    }
+}
+
+
+class Location {
+    constructor(coords = [0,0]) {
+        this._isValidCoords = (coords) => {
+            if(!coords) return false;
+            if(!Array.isArray(coords)) return false;
+            if(coords.length != 2) return false;
+            if(coords[X] % 1 != 0) return false;
+            if(coords[Y] % 1 != 0) return false;
+            if(coords[X] >= worldWidth / tileWidth) return false;
+            if(coords[Y] >= worldHeight / tileHeight) return false;
+            if(coords[X] < 0 || coords[Y] < 0) return false;
+
+            return true;
+        };
+
+        if(this._isValidCoords(coords)) this._currentLoc = coords;
+        else throw new TypeError('Invalid args passed');
+
+        this._gotoLoc = this._currentLoc;
+
+    }
+
+    set location(coords) {
+        if(!this._isValidCoords(coords)) throw new TypeError('Invalid args passed');
+
+        this._currentLoc = coords;
+    }
+
+    set gotoLocation(coords) {
+        if(!this._isValidCoords(coords)) throw new TypeError('Invalid args passed');
+
+        this._gotoLoc = coords;
+    }
+
+    get location() { return this._currentLoc; }
+
+    hasArrived() {
+        return this._currentLoc[X] === this._gotoLoc[X]
+            && this._currentLoc[Y] === this._gotoLoc[Y];
+    }
+
+    move() {
+        const MOVE_DISTANCE = 0.5;
+
+        if(this._currentLoc[X] === this._gotoLoc[X]
+            && this._currentLoc[Y] === this._gotoLoc[Y]) { return; }
+
+        let xDiff = Math.abs(this._currentLoc[X] - this._gotoLoc[X]);
+        let yDiff = Math.abs(this._currentLoc[Y] - this._gotoLoc[Y]);
+
+        if(xDiff > yDiff) {
+            if(this._currentLoc[X] > this._gotoLoc[X]) {
+                this._currentLoc[X] -= MOVE_DISTANCE;
+            }
+            else {
+                this._currentLoc[X] += MOVE_DISTANCE;
+            }
+        }
+        else {
+            if(this._currentLoc[Y] > this._gotoLoc[Y]) {
+                this._currentLoc[Y] -= MOVE_DISTANCE;
+            }
+            else {
+                this._currentLoc[Y] += MOVE_DISTANCE;
+            }
+        }
     }
 }
 
@@ -633,7 +706,7 @@ let gameManager = function() {
 
         layer2.onclick = playerClickEvent;
 
-        interval = setInterval(() => {
+        idleInterval = setInterval(() => {
             Sprite.increaseTick();
             render(CanvasLayers.ENTITIES);
         }, idleAnimationDuration);
@@ -896,10 +969,27 @@ let gameManager = function() {
 
     function playerClickEvent(evt) {
         let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
-            moveUnit = (loc) => {
-                selectedUnit.setLocation(loc[X], loc[Y]);
+            moveUnit = (loc, callback = () => {}) => {
+                if(!selectedUnit) return;
+
+                selectedUnit.gotoLocation(loc[X], loc[Y]);
                 selectedCoords = [];
+                layer2.onclick = () => {};
                 render();
+
+                let unit = selectedUnit;
+
+                let moveInterval = setInterval(() => {
+                    if(unit.hasArrived()) {
+                        clearInterval(moveInterval);
+                        layer2.onclick = playerClickEvent;
+                        callback();
+                        return;
+                    }
+
+                    unit.move();
+                    render(CanvasLayers.ENTITIES);
+                }, 100);
             };
 
         if (isEqual(selectedCoords, currentSelectedCoords)) {
@@ -928,27 +1018,26 @@ let gameManager = function() {
 
                 for (let tile of tilesNextToEntity) {
                     if (selectedUnitsMoves['movesSet'].has(tile.toString())) {
-                        selectedUnit.setLocation(
-                            tile[X],
-                            tile[Y]);
-                        selectedCoords = [];
+                        moveUnit([tile[X], tile[Y]], () => {
+                            fight(selectedUnit, entity);
+                            render();
+                            selectedUnit.setState(EntityState.INACTIVE);
+                            selectedUnit = null;
+                            update();
+                        });
                         break;
                     }
                 }
 
-                fight(selectedUnit, entity);
-                render();
-                selectedUnit.setState(EntityState.INACTIVE);
-                selectedUnit = null;
-                update();
-
                 return;
             }
 
-            selectedUnit.setState(EntityState.INACTIVE);
-            moveUnit(selectedCoords);
-            selectedUnit = null;
-            update();
+            moveUnit(selectedCoords, () => {
+                selectedUnit.setState(EntityState.INACTIVE);
+                selectedUnit = null;
+                update();
+            });
+
             return;
         }
         else if (
@@ -957,8 +1046,9 @@ let gameManager = function() {
             && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString())) {
             // If selected outside of the unit's boundary
             // then no-op the unit and rerender the map
-            moveUnit(selectedUnit.getLocation());
+            selectedCoords = [];
             selectedUnit = null;
+            render();
             return;
         }
 
