@@ -8,6 +8,7 @@ const X = 0, Y = 1,
     worldWidth = 800,
     worldHeight = 800,
     idleAnimationDuration = 800,
+    moveAnimationDuration = 100,
     UnitType = Object.freeze({
         HERO: 1,
         AXE: 2,
@@ -483,7 +484,7 @@ let gameManager = function() {
         entities,
         gameContext,
         states,
-        interval;
+        idleInterval;
 
 
     class I_GameState {
@@ -706,10 +707,50 @@ let gameManager = function() {
 
         layer2.onclick = playerClickEvent;
 
-        idleInterval = setInterval(() => {
-            Sprite.increaseTick();
-            render(CanvasLayers.ENTITIES);
-        }, idleAnimationDuration);
+        idleInterval = setInterval(
+            idleAnimation,
+            idleAnimationDuration);
+    }
+
+    function idleAnimation() {
+        Sprite.increaseTick();
+        render(CanvasLayers.ENTITIES);
+    }
+
+    function moveAnimation(loc, callback = () => {}) {
+        if(!selectedUnit) return;
+
+        selectedUnit.gotoLocation(loc[X], loc[Y]);
+        selectedCoords = [];
+        layer2.onclick = () => {};
+        clearInterval(idleInterval);
+        render();
+
+        let unit = selectedUnit,
+            count = 0;
+
+        let moveInterval = setInterval(() => {
+            if(unit.hasArrived()) {
+                layer2.onclick = playerClickEvent;
+                clearInterval(moveInterval);
+                callback();
+                idleInterval = setInterval(
+                    idleAnimation,
+                    idleAnimationDuration);
+                return;
+            }
+
+            unit.move();
+
+            count += moveAnimationDuration;
+            if(count >= idleAnimationDuration) {
+                count = 0;
+                idleAnimation();
+            }
+            else {
+                render(CanvasLayers.ENTITIES);
+            }
+        }, moveAnimationDuration);
     }
 
     function render(layer = CanvasLayers.ALL) {
@@ -970,26 +1011,7 @@ let gameManager = function() {
     function playerClickEvent(evt) {
         let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
             moveUnit = (loc, callback = () => {}) => {
-                if(!selectedUnit) return;
-
-                selectedUnit.gotoLocation(loc[X], loc[Y]);
-                selectedCoords = [];
-                layer2.onclick = () => {};
-                render();
-
-                let unit = selectedUnit;
-
-                let moveInterval = setInterval(() => {
-                    if(unit.hasArrived()) {
-                        clearInterval(moveInterval);
-                        layer2.onclick = playerClickEvent;
-                        callback();
-                        return;
-                    }
-
-                    unit.move();
-                    render(CanvasLayers.ENTITIES);
-                }, 100);
+                moveAnimation(loc, callback);
             };
 
         if (isEqual(selectedCoords, currentSelectedCoords)) {
