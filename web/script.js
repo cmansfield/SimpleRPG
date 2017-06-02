@@ -557,9 +557,15 @@ let gameManager = function() {
 
             if(!this._entities) return;
 
-            for(let entity of this._entities) {
+            let activeNPCs = this._entities.slice();
+            let moveNPC = function() {
+                if(!activeNPCs.length) return;
 
-                if(!entity.getAutonomy()) continue;
+                let entity = activeNPCs.pop();
+                if(!entity.getAutonomy()) {
+                    moveNPC();
+                    return;
+                }
 
                 let entityMoves = getEntityMoves(entity.getLocation(), entity.getSpeed()),
                     selectedMove = Math.floor(
@@ -570,12 +576,14 @@ let gameManager = function() {
                     selectedMove = (selectedMove + 1) % entityMoves.moves.length;
                 }
 
-                entity.setLocation(
-                    entityMoves.moves[selectedMove][X],
-                    entityMoves.moves[selectedMove][Y]
-                );
-                render(CanvasLayers.ENTITIES);
-            }
+                moveNpcAnimation(
+                    entity, [
+                        entityMoves.moves[selectedMove][X],
+                        entityMoves.moves[selectedMove][Y]
+                    ], moveNPC);
+            };
+
+            moveNPC();
         }
 
         hasRemainingActiveEntities() {
@@ -696,7 +704,6 @@ let gameManager = function() {
 
             let entity = findEntity(hoverCoords);
 
-            //entity.length && console.log(entity[0].toString());
             if (entity) {
                 output.innerHTML = entity.toString();
             }
@@ -717,21 +724,12 @@ let gameManager = function() {
         render(CanvasLayers.ENTITIES);
     }
 
-    function moveAnimation(loc, callback = () => {}) {
-        if(!selectedUnit) return;
-
-        selectedUnit.gotoLocation(loc[X], loc[Y]);
-        selectedCoords = [];
-        layer2.onclick = () => {};
-        clearInterval(idleInterval);
-        render();
-
-        let unit = selectedUnit,
+    function moveAnimation(entity, loc, callback) {
+        let unit = entity,
             count = 0;
 
         let moveInterval = setInterval(() => {
             if(unit.hasArrived()) {
-                layer2.onclick = playerClickEvent;
                 clearInterval(moveInterval);
                 callback();
                 idleInterval = setInterval(
@@ -751,6 +749,28 @@ let gameManager = function() {
                 render(CanvasLayers.ENTITIES);
             }
         }, moveAnimationDuration);
+    }
+
+    function moveNpcAnimation(entity, loc, callback) {
+        if(!entity) return;
+
+        entity.gotoLocation(loc[X], loc[Y]);
+        clearInterval(idleInterval);
+        render();
+
+        moveAnimation(entity, loc, callback);
+    }
+
+    function movePlayerAnimation(loc, callback) {
+        if(!selectedUnit) return;
+
+        selectedUnit.gotoLocation(loc[X], loc[Y]);
+        selectedCoords = [];
+        layer2.onclick = () => {};
+        clearInterval(idleInterval);
+        render();
+
+        moveAnimation(selectedUnit, loc, callback);
     }
 
     function render(layer = CanvasLayers.ALL) {
@@ -1011,16 +1031,17 @@ let gameManager = function() {
     function playerClickEvent(evt) {
         let currentSelectedCoords = getCoords(evt.layerX, evt.layerY),
             moveUnit = (loc, callback = () => {}) => {
-                moveAnimation(loc, callback);
+                movePlayerAnimation(loc, callback);
             };
 
         if (isEqual(selectedCoords, currentSelectedCoords)) {
-            //render(CanvasLayers.FOG);
-            render();
+            render(CanvasLayers.BACKGROUND);
+            render(CanvasLayers.FOG);
             selectedCoords = [];
             selectedUnit = null;
             return;
         }
+
         selectedCoords = currentSelectedCoords;
         let entity = findEntity(selectedCoords);
 
@@ -1031,6 +1052,7 @@ let gameManager = function() {
             selectedUnit
             && selectedUnitsMoves
             && selectedUnitsMoves['movesSet'].has(selectedCoords.toString())) {
+
             // If any enemy was selected then we need to
             // attack it
             if (entity) {
@@ -1044,6 +1066,7 @@ let gameManager = function() {
                             fight(selectedUnit, entity);
                             render();
                             selectedUnit.setState(EntityState.INACTIVE);
+                            layer2.onclick = playerClickEvent;
                             selectedUnit = null;
                             update();
                         });
@@ -1056,6 +1079,7 @@ let gameManager = function() {
 
             moveUnit(selectedCoords, () => {
                 selectedUnit.setState(EntityState.INACTIVE);
+                layer2.onclick = playerClickEvent;
                 selectedUnit = null;
                 update();
             });
@@ -1066,6 +1090,7 @@ let gameManager = function() {
             selectedUnit
             && selectedUnitsMoves
             && !selectedUnitsMoves['movesSet'].has(selectedCoords.toString())) {
+
             // If selected outside of the unit's boundary
             // then no-op the unit and rerender the map
             selectedCoords = [];
@@ -1083,7 +1108,9 @@ let gameManager = function() {
         }
 
         if (!entity) selectedUnit = null;
-        else if (!selectedUnit && entity.getState() == EntityState.ACTIVE) selectedUnit = entity;
+        else if (!selectedUnit && entity.getState() == EntityState.ACTIVE) {
+            selectedUnit = entity;
+        }
     }
 
     return {
@@ -1102,8 +1129,7 @@ $(document).ready(() => {
 // ********** TODO **********
 // Prevent allied units from attacking each other
 // Add AI to enemies
-// Add icon animations
-// Add a way to win the game
+// Add attack animation
 // Balance the fighting better
 // Add healing
 // Add notifications when something happens
