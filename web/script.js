@@ -498,6 +498,7 @@ let gameManager = function() {
                 && this.affiliation === undefined
                 && this.hasRemainingActiveEntities === undefined
                 && this.resetEntityStatus === undefined
+                && this.removeEntity === undefined
             ) { throw new TypeError('Must override required methods'); }
         }
     }
@@ -529,6 +530,12 @@ let gameManager = function() {
             }
 
             return false;
+        }
+
+        removeEntity(entityToRem) {
+            this._entities = this._entities.filter((entity) => {
+                return entity !== entityToRem;
+            });
         }
 
         resetEntityStatus() {
@@ -595,6 +602,14 @@ let gameManager = function() {
             }
 
             return false;
+        }
+
+        removeEntity(entityToRem) {
+            if(!this._entities) return;
+
+            this._entities = this._entities.filter((entity) => {
+                return entity !== entityToRem;
+            });
         }
 
         resetEntityStatus() {
@@ -680,10 +695,15 @@ let gameManager = function() {
                 badEntityFac.generate([12, 6])
             ],
             allies: [
-                goodEntityFac.generate([3, 22]),
-                goodEntityFac.generate([5, 21], UnitType.SWORD, 2, false, 'Kent')
+                goodEntityFac.generate([12, 4]),
+                goodEntityFac.generate([12, 7], UnitType.SWORD, 2, false, 'Kent')
             ]
         };
+
+        // allies: [
+        //     goodEntityFac.generate([3, 22]),
+        //     goodEntityFac.generate([5, 21], UnitType.SWORD, 2, false, 'Kent')
+        // ]
 
         gameContext = new GameContext();
         states = {
@@ -732,6 +752,7 @@ let gameManager = function() {
             if(unit.hasArrived()) {
                 clearInterval(moveInterval);
                 callback();
+                clearInterval(idleInterval);
                 idleInterval = setInterval(
                     idleAnimation,
                     idleAnimationDuration);
@@ -958,6 +979,12 @@ let gameManager = function() {
                 entities[prop] = entities[prop].filter((entity) => {
                     return entity !== entityToRem;
                 });
+            }
+        }
+
+        for (let prop in states) {
+            if (states.hasOwnProperty(prop)) {
+                states[prop].removeEntity(entityToRem);
             }
         }
     }
